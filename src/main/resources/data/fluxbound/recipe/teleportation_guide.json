@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:book",
+    "minecraft:redstone",
+    "minecraft:copper_ingot"
+  ],
+  "result": {
+    "id": "fluxbound:teleportation_guide",
+    "count": 1
+  }
+}

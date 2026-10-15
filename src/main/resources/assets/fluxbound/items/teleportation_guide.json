@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "fluxbound:item/teleportation_guide"
+  }
+}
