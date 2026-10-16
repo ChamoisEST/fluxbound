@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "fluxbound:block/arrival_anchor"
+    }
+  }
+}

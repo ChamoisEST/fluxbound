@@ -2,20 +2,22 @@
 package io.github.chamoisest.fluxbound;
 
 import com.mojang.logging.LogUtils;
+import guideme.Guide;
+import io.github.chamoisest.fluxbound.registry.ModBlockEntities;
+import io.github.chamoisest.fluxbound.registry.ModBlocks;
+import io.github.chamoisest.fluxbound.registry.ModCreativeTabs;
+import io.github.chamoisest.fluxbound.registry.ModItems;
+import io.github.chamoisest.fluxbound.registry.ModCapabilities;
+import io.github.chamoisest.fluxbound.config.ModConfigs;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.CreativeModeTab;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
-import net.minecraft.world.item.Item;
-import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import io.github.chamoisest.fluxbound.item.TeleportationGuideItem;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.CreativeModeTab;
-import net.neoforged.neoforge.registries.DeferredHolder;
 import org.slf4j.Logger;
-
-import guideme.Guide;
-import net.minecraft.resources.Identifier;
 
 
 @Mod(Fluxbound.MODID)
@@ -29,37 +31,16 @@ public class Fluxbound {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-    public static final DeferredRegister.Blocks BLOCKS =
-            DeferredRegister.createBlocks(MODID);
-
-    public static final DeferredRegister.Items ITEMS =
-            DeferredRegister.createItems(MODID);
 
 
-    public static final DeferredItem<TeleportationGuideItem> TELEPORTATION_GUIDE =
-            ITEMS.registerItem(
-                    "teleportation_guide",
-                    TeleportationGuideItem::new,
-                    properties -> properties.stacksTo(1)
-            );
+    public Fluxbound(IEventBus modEventBus, ModContainer container){
+        ModBlocks.register(modEventBus);
+        ModItems.register(modEventBus);
+        ModBlockEntities.register(modEventBus);
+        ModCreativeTabs.register(modEventBus);
+        modEventBus.addListener(ModCapabilities::register);
 
-
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> FLUXBOUND_TAB =
-            CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder()
-                    .title(Component.translatable("itemGroup.fluxbound"))
-                    .icon(() -> TELEPORTATION_GUIDE.get().getDefaultInstance())
-                    .displayItems((parameters, output) -> {
-                        output.accept(TELEPORTATION_GUIDE.get());
-                    })
-                    .build());
-
-
-
-    public Fluxbound(IEventBus modEventBus) {
-        BLOCKS.register(modEventBus);
-        ITEMS.register(modEventBus);
-
-        CREATIVE_MODE_TABS.register(modEventBus);
+        container.registerConfig(ModConfig.Type.SERVER, ModConfigs.SPEC);
 
         Guide.builder(Identifier.parse("fluxbound:guide")).build();
 

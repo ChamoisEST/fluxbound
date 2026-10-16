@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CRC",
+    "RER",
+    "CRC"
+  ],
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "R": "minecraft:redstone",
+    "E": "minecraft:ender_pearl"
+  },
+  "result": {
+    "id": "fluxbound:basic_teleportation_core",
+    "count": 1
+  }
+}

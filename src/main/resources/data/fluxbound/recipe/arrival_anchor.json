@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GCG",
+    "CTC",
+    "IHI"
+  ],
+  "key": {
+    "G": "minecraft:glass",
+    "C": "minecraft:copper_ingot",
+    "T": "fluxbound:basic_teleportation_core",
+    "I": "minecraft:iron_ingot",
+    "H": "fluxbound:teleportation_chassis"
+  },
+  "result": {
+    "id": "fluxbound:arrival_anchor",
+    "count": 1
+  }
+}

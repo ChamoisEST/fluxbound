@@ -147,6 +147,10 @@ dependencies {
 // Optional mods used only while developing Fluxbound.
     localRuntime "curse.maven:jei-238222:9144044"
     localRuntime "curse.maven:jade-324717:9156414"
+    compileOnly "curse.maven:jade-324717:9156414"
+
+    localRuntime "curse.maven:powah-rearchitected-633483:8025339"
+    localRuntime "curse.maven:cloth-config-348521:7817583"
 
 }
 

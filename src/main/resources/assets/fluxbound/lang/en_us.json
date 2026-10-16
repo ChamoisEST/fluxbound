@@ -1,4 +1,10 @@
 {
   "item.fluxbound.teleportation_guide": "Teleportation Guide",
-  "itemGroup.fluxbound": "Fluxbound"
+  "item.fluxbound.basic_teleportation_core": "Basic Teleportation Core",
+  "item.fluxbound.teleportation_chassis": "Teleportation Chassis",
+  "item.fluxbound.teleportation_casing": "Teleportation Casing",
+  "block.fluxbound.arrival_anchor": "Arrival Anchor",
+  "itemGroup.fluxbound": "Fluxbound",
+  "jade.fluxbound.energy": "Energy: %s / %s FE",
+  "config.jade.plugin_fluxbound.machine_energy": "Machine Energy"
 }

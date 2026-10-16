@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GCG",
+    "ICI",
+    " C "
+  ],
+  "key": {
+    "G": "minecraft:glass",
+    "C": "minecraft:copper_ingot",
+    "I": "minecraft:iron_ingot"
+  },
+  "result": {
+    "id": "fluxbound:teleportation_casing",
+    "count": 1
+  }
+}
