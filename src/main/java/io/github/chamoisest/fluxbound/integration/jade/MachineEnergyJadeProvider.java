@@ -44,7 +44,10 @@ public final class MachineEnergyJadeProvider implements StreamServerDataProvider
             return null;
         }
 
-        return new EnergyInfo(Math.toIntExact(record.energy()), ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get());
+        return new EnergyInfo(
+                Math.toIntExact(record.energy()),
+                Math.multiplyExact(ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get(), record.blockCount())
+        );
     }
 
     @Override

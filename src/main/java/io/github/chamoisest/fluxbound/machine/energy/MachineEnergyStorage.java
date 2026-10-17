@@ -16,6 +16,9 @@ public final class MachineEnergyStorage implements EnergyHandler
     private final LongSupplier gameTime;
     private final BooleanSupplier valid;
 
+    private boolean active = true;
+    private long suspendedInputThroughTick = Long.MIN_VALUE;
+
     private long lastInputTick = Long.MIN_VALUE;
 
     public MachineEnergyStorage(int capacity, int inputPerTick, int initialEnergy,
@@ -28,7 +31,9 @@ public final class MachineEnergyStorage implements EnergyHandler
             @Override
             protected void onEnergyChanged(int previousAmount)
             {
-                onEnergyChanged.accept(getAmountAsInt());
+                if (active) {
+                    onEnergyChanged.accept(getAmountAsInt());
+                }
             }
         };
 
@@ -38,13 +43,13 @@ public final class MachineEnergyStorage implements EnergyHandler
     @Override
     public long getAmountAsLong()
     {
-        return valid.getAsBoolean() ? storage.getAmountAsLong() : 0;
+        return active && valid.getAsBoolean() ? storage.getAmountAsLong() : 0;
     }
 
     @Override
     public long getCapacityAsLong()
     {
-        return storage.getCapacityAsLong();
+        return active ? storage.getCapacityAsLong() : 0;
     }
 
     @Override
@@ -54,7 +59,7 @@ public final class MachineEnergyStorage implements EnergyHandler
             throw new IllegalArgumentException("Energy amount cannot be negative.");
         }
 
-        if (!valid.getAsBoolean()) {
+        if (!active || !valid.getAsBoolean() || gameTime.getAsLong() <= suspendedInputThroughTick) {
             return 0;
         }
 
@@ -83,6 +88,16 @@ public final class MachineEnergyStorage implements EnergyHandler
         }
 
         return 0;
+    }
+
+    public void invalidate()
+    {
+        active = false;
+    }
+
+    public void suspendInputThrough(long tick)
+    {
+        suspendedInputThroughTick = tick;
     }
 }
 

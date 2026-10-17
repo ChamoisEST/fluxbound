@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "minecraft:item/copper_ingot"
+    "model": "fluxbound:item/teleportation_casing"
   }
 }

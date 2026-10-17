@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "fluxbound:block/arrival_anchor_side",
+    "up": "fluxbound:block/arrival_anchor_top_standalone",
+    "down": "fluxbound:block/arrival_anchor_bottom",
+    "north": "fluxbound:block/arrival_anchor_side",
+    "south": "fluxbound:block/arrival_anchor_side",
+    "east": "fluxbound:block/arrival_anchor_side",
+    "west": "fluxbound:block/arrival_anchor_side"
+  }
+}

@@ -1,0 +1,169 @@
+package io.github.chamoisest.fluxbound.item;
+
+import io.github.chamoisest.fluxbound.machine.MachinePackedItems;
+import io.github.chamoisest.fluxbound.machine.blockentity.ArrivalAnchorBlockEntity;
+import io.github.chamoisest.fluxbound.machine.data.MachineRecord;
+import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
+import io.github.chamoisest.fluxbound.machine.data.PackedMachine;
+import io.github.chamoisest.fluxbound.registry.ModBlocks;
+import io.github.chamoisest.fluxbound.registry.ModDataComponents;
+import io.github.chamoisest.fluxbound.registry.ModItems;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.level.Level;
+import io.github.chamoisest.fluxbound.machine.permission.MachineAccess;
+import io.github.chamoisest.fluxbound.machine.permission.MachineRight;
+
+public class FluxboundWrenchItem extends Item
+{
+    public FluxboundWrenchItem(Properties properties)
+    {
+        super(properties);
+    }
+
+
+    @Override
+    public InteractionResult use(Level level, Player player, InteractionHand hand)
+    {
+        ItemStack wrench = player.getItemInHand(hand);
+
+        if (!wrench.has(ModDataComponents.WRENCH_SELECTION.get())) {
+            return InteractionResult.PASS;
+        }
+
+        if (!level.isClientSide()) {
+            wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
+            message(player, "message.fluxbound.wrench.cleared");
+        }
+
+        return InteractionResult.SUCCESS;
+    }
+
+
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context)
+    {
+        BlockPos pos = context.getClickedPos();
+
+        if (!context.getLevel().getBlockState(pos).is(ModBlocks.ARRIVAL_ANCHOR.get())) {
+            return InteractionResult.PASS;
+        }
+
+        if (!(context.getLevel() instanceof ServerLevel level)) {
+            return InteractionResult.SUCCESS;
+        }
+
+        if (!(context.getPlayer() instanceof ServerPlayer player)) {
+            return InteractionResult.PASS;
+        }
+
+        if (!level.mayInteract(player, pos)
+                || !player.mayUseItemAt(pos, context.getClickedFace(), stack)) {
+            message(player, "message.fluxbound.wrench.denied");
+            return InteractionResult.SUCCESS;
+        }
+
+        MachineRegistryData registry = MachineRegistryData.get(level);
+        MachineRecord target = registry.findAt(level.dimension().identifier().toString(), pos.asLong());
+
+        if (target == null) {
+            message(player, "message.fluxbound.wrench.invalid");
+            return InteractionResult.SUCCESS;
+        }
+
+        // Temporary owner-only restriction, until Manage permissions exist.
+        if (!MachineAccess.has(player, target, MachineRight.MANAGE)) {
+            message(player, "message.fluxbound.wrench.denied");
+            return InteractionResult.SUCCESS;
+        }
+
+        if (player.isShiftKeyDown()) {
+            pickup(level, player, pos, stack);
+        } else {
+            selectOrJoin(level, player, target, stack);
+        }
+
+        return InteractionResult.SUCCESS;
+    }
+
+    private void selectOrJoin(ServerLevel level, ServerPlayer player, MachineRecord target, ItemStack wrench)
+    {
+        String selectedId = wrench.get(ModDataComponents.WRENCH_SELECTION.get());
+
+        if (selectedId == null) {
+            wrench.set(ModDataComponents.WRENCH_SELECTION.get(), target.id());
+            message(player, "message.fluxbound.wrench.selected", target.blockCount());
+            return;
+        }
+
+        wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
+
+        if (selectedId.equals(target.id())) {
+            message(player, "message.fluxbound.wrench.cleared");
+            return;
+        }
+
+        MachineRegistryData registry = MachineRegistryData.get(level);
+        MachineRecord selected = registry.find(selectedId);
+
+        if (!MachineAccess.has(player, selected, MachineRight.MANAGE)) {
+            message(player, "message.fluxbound.wrench.denied");
+            return;
+        }
+
+        if (registry.tryManualJoin(level, selectedId, target.id())) {
+            message(player, "message.fluxbound.wrench.joined");
+        } else {
+            message(player, "message.fluxbound.wrench.incompatible");
+        }
+    }
+
+    private void pickup(ServerLevel level, ServerPlayer player, BlockPos pos, ItemStack wrench)
+    {
+        if (!(level.getBlockEntity(pos) instanceof ArrivalAnchorBlockEntity anchor)) {
+            message(player, "message.fluxbound.wrench.invalid");
+            return;
+        }
+
+        // No vanilla loot drop is generated by removeBlock().
+        // The block entity's normal removal callback prepares the packed data.
+        if (!level.removeBlock(pos, false)) {
+            message(player, "message.fluxbound.wrench.failed");
+            return;
+        }
+
+        PackedMachine packed = anchor.takePendingPickup();
+
+        if (packed == null) {
+            message(player, "message.fluxbound.wrench.failed");
+            return;
+        }
+
+        ItemStack result = new ItemStack(ModItems.ARRIVAL_ANCHOR.get());
+        MachinePackedItems.attach(level, result, packed);
+
+        // Give the result to the player, including in Creative Mode.
+        // If inventory space is unavailable, drop it at the player's feet.
+        player.getInventory().add(result);
+
+        if (!result.isEmpty()) {
+            player.drop(result, false);
+        }
+
+        wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
+        message(player, "message.fluxbound.wrench.picked_up");
+    }
+
+    private static void message(Player player, String key, Object... arguments)
+    {
+        player.sendOverlayMessage(Component.translatable(key, arguments));
+    }
+}

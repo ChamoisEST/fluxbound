@@ -1,35 +1,39 @@
 ---
 navigation:
-title: Crafting Components
-position: 1
+  title: Crafting Components
+  position: 1
 item_ids:
-- fluxbound:basic_teleportation_core
-- fluxbound:teleportation_chassis
-- fluxbound:teleportation_casing
+  - fluxbound:basic_teleportation_core
+  - fluxbound:teleportation_chassis
+  - fluxbound:teleportation_casing
 ---
 
-# Basic Crafting Components
+# Crafting Components
 
-Fluxbound uses specialized components to construct teleportation equipment.
+Fluxbound uses specialized components to construct teleportation equipment. All three components below can be crafted using ordinary Minecraft crafting recipes.
 
 ## Basic Teleportation Core
 
-The Basic Teleportation Core is the foundation of early teleportation technology. It uses copper, redstone, and an ender pearl.
+The Basic Teleportation Core combines copper, redstone, and an ender pearl. It is the foundation of Basic-tier teleportation technology and will also be used in later progression.
 
 <RecipeFor id="fluxbound:basic_teleportation_core" />
 
 ## Teleportation Chassis
 
-The Teleportation Chassis provides the structural foundation for stationary machines.
+The Teleportation Chassis is a structural component used to construct stationary machines, starting with the <ItemLink id="fluxbound:arrival_anchor" />.
 
 <RecipeFor id="fluxbound:teleportation_chassis" />
 
 ## Teleportation Casing
 
-The Teleportation Casing provides additional structural components for higher-tier machine crafting.
+The Teleportation Casing is a structural crafting component intended for higher-tier stationary teleporters. Those machine recipes are not implemented yet.
 
 <RecipeFor id="fluxbound:teleportation_casing" />
 
 ## What's Next?
 
-These components will be used to create Arrival Anchors, Advanced Teleporters, and Quantum Teleporters as you progress.
+The Basic Teleportation Core and Teleportation Chassis are used to craft the <ItemLink id="fluxbound:arrival_anchor" />.
+
+Read the [Arrival Anchor](arrival_anchor.md) chapter to learn about energy storage, rectangular multiblocks, machine pickup, and permissions.
+
+The Basic Handheld and higher-tier machines will use additional components as their features are implemented.

@@ -3,11 +3,7 @@ package io.github.chamoisest.fluxbound;
 
 import com.mojang.logging.LogUtils;
 import guideme.Guide;
-import io.github.chamoisest.fluxbound.registry.ModBlockEntities;
-import io.github.chamoisest.fluxbound.registry.ModBlocks;
-import io.github.chamoisest.fluxbound.registry.ModCreativeTabs;
-import io.github.chamoisest.fluxbound.registry.ModItems;
-import io.github.chamoisest.fluxbound.registry.ModCapabilities;
+import io.github.chamoisest.fluxbound.registry.*;
 import io.github.chamoisest.fluxbound.config.ModConfigs;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
@@ -38,6 +34,7 @@ public class Fluxbound {
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
+        ModDataComponents.register(modEventBus);
         modEventBus.addListener(ModCapabilities::register);
 
         container.registerConfig(ModConfig.Type.SERVER, ModConfigs.SPEC);

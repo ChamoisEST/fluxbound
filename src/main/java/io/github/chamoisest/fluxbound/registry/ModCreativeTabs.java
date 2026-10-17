@@ -23,6 +23,7 @@ public final class ModCreativeTabs
                         output.accept(ModItems.TELEPORTATION_CHASSIS.get());
                         output.accept(ModItems.TELEPORTATION_CASING.get());
                         output.accept(ModItems.ARRIVAL_ANCHOR.get());
+                        output.accept(ModItems.WRENCH.get());
                     })
                     .build());
 

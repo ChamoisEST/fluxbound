@@ -1,6 +1,8 @@
+
 package io.github.chamoisest.fluxbound.machine.blockentity;
 
 import io.github.chamoisest.fluxbound.Fluxbound;
+import io.github.chamoisest.fluxbound.config.ModConfigs;
 import io.github.chamoisest.fluxbound.machine.data.MachineRecord;
 import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
 import io.github.chamoisest.fluxbound.registry.ModBlockEntities;
@@ -10,14 +12,15 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import io.github.chamoisest.fluxbound.config.ModConfigs;
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import io.github.chamoisest.fluxbound.machine.data.PackedMachine;
 
 import java.util.UUID;
 
 public class ArrivalAnchorBlockEntity extends BlockEntity
 {
     private String machineId;
+    private PackedMachine pendingPickup;
 
     public ArrivalAnchorBlockEntity(BlockPos pos, BlockState state)
     {
@@ -29,11 +32,23 @@ public class ArrivalAnchorBlockEntity extends BlockEntity
         return machineId;
     }
 
+    public void setMachineId(String id)
+    {
+        if (!id.equals(machineId)) {
+            machineId = id;
+            setChanged();
+        }
+    }
+
     @Override
     public void onLoad()
     {
         super.onLoad();
         initializeMachine();
+
+        if (level instanceof ServerLevel serverLevel) {
+            MachineRegistryData.get(serverLevel).refreshVisualAt(serverLevel, worldPosition);
+        }
     }
 
     public void initializeMachine()
@@ -45,23 +60,45 @@ public class ArrivalAnchorBlockEntity extends BlockEntity
         MachineRegistryData registry = MachineRegistryData.get(serverLevel);
         String dimension = serverLevel.dimension().identifier().toString();
 
-        MachineRecord existing = machineId == null ? null : registry.find(machineId);
+        MachineRecord atPosition = registry.findAt(dimension, worldPosition.asLong());
 
-        if (existing != null &&
-                (!existing.dimension().equals(dimension) || existing.position() != worldPosition.asLong())) {
-            Fluxbound.LOGGER.warn("Duplicate machine identity detected at {}; assigning a new UUID.", worldPosition);
-            machineId = null;
+        if (atPosition != null) {
+            setMachineId(atPosition.id());
+
+            Fluxbound.LOGGER.info("Loaded Arrival Anchor {} at {} ({} members, {} FE)",
+                    atPosition.id(), worldPosition, atPosition.blockCount(), atPosition.energy());
+            return;
         }
 
-        if (machineId == null) {
+        if (machineId == null || registry.find(machineId) != null) {
             machineId = UUID.randomUUID().toString();
             setChanged();
         }
 
-        boolean created = registry.ensureRegistered(machineId, dimension, worldPosition.asLong());
+        registry.ensureRegistered(machineId, dimension, worldPosition.asLong());
 
-        Fluxbound.LOGGER.info("{} Arrival Anchor {} at {}",
-                created ? "Registered" : "Loaded", machineId, worldPosition);
+        Fluxbound.LOGGER.info("Registered Arrival Anchor {} at {}", machineId, worldPosition);
+    }
+
+    public EnergyHandler getEnergyHandler()
+    {
+        if (!(level instanceof ServerLevel serverLevel) || machineId == null) {
+            return null;
+        }
+
+        MachineRecord record = MachineRegistryData.get(serverLevel).find(machineId);
+        String dimension = serverLevel.dimension().identifier().toString();
+
+        if (record == null || !record.contains(dimension, worldPosition.asLong())) {
+            return null;
+        }
+
+        return MachineRegistryData.get(serverLevel).getEnergyHandler(
+                machineId,
+                serverLevel,
+                Math.multiplyExact(ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get(), record.blockCount()),
+                Math.multiplyExact(ModConfigs.ARRIVAL_ANCHOR_INPUT.get(), record.blockCount())
+        );
     }
 
     @Override
@@ -84,36 +121,18 @@ public class ArrivalAnchorBlockEntity extends BlockEntity
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state)
     {
-        if (level instanceof ServerLevel serverLevel && machineId != null) {
-            MachineRegistryData.get(serverLevel).remove(
-                    machineId, serverLevel.dimension().identifier().toString(), pos.asLong());
+        if (level instanceof ServerLevel serverLevel) {
+            pendingPickup = MachineRegistryData.get(serverLevel).removeMember(serverLevel, pos);
         }
 
         super.preRemoveSideEffects(pos, state);
     }
 
-
-    public EnergyHandler getEnergyHandler()
+    public PackedMachine takePendingPickup()
     {
-        if (!(level instanceof ServerLevel serverLevel) || machineId == null) {
-            return null;
-        }
-
-        MachineRegistryData registry = MachineRegistryData.get(serverLevel);
-        MachineRecord record = registry.find(machineId);
-
-        if (record == null ||
-                !record.dimension().equals(serverLevel.dimension().identifier().toString()) ||
-                record.position() != worldPosition.asLong()) {
-            return null;
-        }
-
-        return registry.getEnergyHandler(
-                machineId,
-                serverLevel,
-                ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get(),
-                ModConfigs.ARRIVAL_ANCHOR_INPUT.get()
-        );
+        PackedMachine result = pendingPickup;
+        pendingPickup = null;
+        return result;
     }
 
 }

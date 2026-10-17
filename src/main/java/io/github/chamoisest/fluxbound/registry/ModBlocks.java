@@ -13,7 +13,9 @@ public final class ModBlocks
 
     public static final DeferredBlock<ArrivalAnchorBlock> ARRIVAL_ANCHOR =
             BLOCKS.registerBlock("arrival_anchor", ArrivalAnchorBlock::new,
-                    properties -> properties.mapColor(MapColor.METAL).strength(3.5F));
+                    properties -> properties.mapColor(MapColor.METAL)
+                            .strength(3.5F)
+                            .requiresCorrectToolForDrops());
 
     private ModBlocks() {}
 

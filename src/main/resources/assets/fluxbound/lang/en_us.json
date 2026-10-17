@@ -6,5 +6,16 @@
   "block.fluxbound.arrival_anchor": "Arrival Anchor",
   "itemGroup.fluxbound": "Fluxbound",
   "jade.fluxbound.energy": "Energy: %s / %s FE",
-  "config.jade.plugin_fluxbound.machine_energy": "Machine Energy"
+  "config.jade.plugin_fluxbound.machine_energy": "Machine Energy",
+  "tooltip.fluxbound.stored": "Stored: ",
+  "tooltip.fluxbound.max_input": "Max Input: ",
+  "item.fluxbound.wrench": "Fluxbound Wrench",
+  "message.fluxbound.wrench.selected": "Selected machine (%s blocks). Right-click another machine to join.",
+  "message.fluxbound.wrench.cleared": "Machine selection cleared.",
+  "message.fluxbound.wrench.joined": "Machines joined successfully.",
+  "message.fluxbound.wrench.incompatible": "Cannot join: machines must be compatible, adjacent, and form a rectangle.",
+  "message.fluxbound.wrench.invalid": "Machine selection is no longer valid.",
+  "message.fluxbound.wrench.denied": "You do not have permission to modify this machine.",
+  "message.fluxbound.wrench.failed": "Could not pick up the machine.",
+  "message.fluxbound.wrench.picked_up": "Arrival Anchor picked up."
 }

@@ -1,7 +1,98 @@
 {
-  "variants": {
-    "": {
-      "model": "fluxbound:block/arrival_anchor"
+  "multipart": [
+    {
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_body"
+      }
+    },
+    {
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_field"
+      }
+    },
+    {
+      "when": {
+        "north_connected": "false"
+      },
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_edge",
+        "y": 0,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "east_connected": "false"
+      },
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_edge",
+        "y": 90,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "south_connected": "false"
+      },
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_edge",
+        "y": 180,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "west_connected": "false"
+      },
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_edge",
+        "y": 270,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "north_connected": "false",
+        "west_connected": "false"
+      },
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_corner",
+        "y": 0,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "north_connected": "false",
+        "east_connected": "false"
+      },
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_corner",
+        "y": 90,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "south_connected": "false",
+        "east_connected": "false"
+      },
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_corner",
+        "y": 180,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "south_connected": "false",
+        "west_connected": "false"
+      },
+      "apply": {
+        "model": "fluxbound:block/arrival_anchor_corner",
+        "y": 270,
+        "uvlock": true
+      }
     }
-  }
+  ]
 }

@@ -2,6 +2,7 @@
 package io.github.chamoisest.fluxbound.registry;
 
 import io.github.chamoisest.fluxbound.Fluxbound;
+import io.github.chamoisest.fluxbound.item.FluxboundWrenchItem;
 import io.github.chamoisest.fluxbound.item.TeleportationGuideItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
@@ -15,6 +16,9 @@ public final class ModItems
 
     public static final DeferredItem<TeleportationGuideItem> TELEPORTATION_GUIDE =
             ITEMS.registerItem("teleportation_guide", TeleportationGuideItem::new, properties -> properties.stacksTo(1));
+
+    public static final DeferredItem<FluxboundWrenchItem> WRENCH =
+            ITEMS.registerItem("wrench", FluxboundWrenchItem::new, properties -> properties.stacksTo(1));
 
     public static final DeferredItem<Item> BASIC_TELEPORTATION_CORE =
             ITEMS.registerSimpleItem("basic_teleportation_core");
