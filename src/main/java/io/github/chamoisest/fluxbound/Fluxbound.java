@@ -23,18 +23,13 @@ public class Fluxbound {
 
     public static final Logger LOGGER = LogUtils.getLogger();
 
-
-    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
-            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
-
-
-
     public Fluxbound(IEventBus modEventBus, ModContainer container){
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModDataComponents.register(modEventBus);
+        ModMenuTypes.register(modEventBus);
         modEventBus.addListener(ModCapabilities::register);
 
         container.registerConfig(ModConfig.Type.SERVER, ModConfigs.SPEC);
