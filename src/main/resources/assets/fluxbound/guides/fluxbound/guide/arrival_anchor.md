@@ -26,7 +26,7 @@ Each physical Arrival Anchor contributes:
 - **200 FE/t** of maximum external input.
 - **0 FE/t** of passive consumption.
 
-These values are configurable by the server.
+Server operators and players can change these values in `config/fluxbound-common.toml`; changes require a game restart.
 
 FE can enter through the **bottom and four horizontal sides**, but **not through the top**. The top is reserved for players, although this does not prevent other blocks from being physically placed above it.
 

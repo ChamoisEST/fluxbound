@@ -19,7 +19,7 @@ The Fluxbound Wrench is a reusable, durability-free tool for managing machines s
 | Action | Function |
 | --- | --- |
 | Right-click an Anchor | Select its logical multiblock |
-| Right-click another Anchor | Attempt to join the two selected structures |
+| Right-click another Anchor | Attempt to join the two structures; the selection is kept if the join fails |
 | Right-click the selected machine again | Clear selection |
 | Right-click in the air | Clear selection |
 | Sneak + right-click an Anchor | Instantly pick up one physical block |
@@ -39,7 +39,9 @@ Both machines must:
 
 The player must have [Manage permission](permissions.md) on both machines.
 
-Manual joining works even for Anchors deliberately separated through sneak-placement. A successful join combines the stored FE and enables normal automatic joining on the result.
+Manual joining works even for Anchors deliberately separated through sneak-placement. A successful join combines the stored FE, enables normal automatic joining on the result, and clears the selection.
+
+If a join fails, the selection is kept so you can try another machine. The selection is cleared if the selected machine no longer exists, for example after it was removed or restructured, or if you no longer have Manage permission on it.
 
 Right-click in the air, or right-click the selected machine again, to cancel selection. The cyan wrench indicator turns off when the selection is cleared.
 

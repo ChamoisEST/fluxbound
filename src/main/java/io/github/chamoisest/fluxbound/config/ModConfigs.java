@@ -15,13 +15,13 @@ public final class ModConfigs
         builder.push("arrivalAnchor");
 
         ARRIVAL_ANCHOR_CAPACITY = builder
-                .comment("FE capacity per Arrival Anchor block.")
-                .worldRestart()
+                .comment("FE capacity per Arrival Anchor block. Requires a game restart.")
+                .gameRestart()
                 .defineInRange("capacityPerBlock", 100_000, 1, 20_000_000);
 
         ARRIVAL_ANCHOR_INPUT = builder
-                .comment("Maximum FE input per tick per Arrival Anchor block.")
-                .worldRestart()
+                .comment("Maximum FE input per tick per Arrival Anchor block. Requires a game restart.")
+                .gameRestart()
                 .defineInRange("inputPerTickPerBlock", 200, 0, 1_000_000);
 
         builder.pop();

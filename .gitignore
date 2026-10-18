@@ -32,6 +32,13 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+### Fluxbound ###
+# Local scratch files (mock-ups, notes); never committed.
+temp/
+# Internal development documentation and assistant instructions; kept local, not published.
+docs/development/
+CLAUDE.md
+
 ### Minecraft Modding ###
 run/
 !**/src/**/run/

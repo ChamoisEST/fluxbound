@@ -79,7 +79,6 @@ public class FluxboundWrenchItem extends Item
             return InteractionResult.SUCCESS;
         }
 
-        // Temporary owner-only restriction, until Manage permissions exist.
         if (!MachineAccess.has(player, target, MachineRight.MANAGE)) {
             message(player, "message.fluxbound.wrench.denied");
             return InteractionResult.SUCCESS;
@@ -104,9 +103,8 @@ public class FluxboundWrenchItem extends Item
             return;
         }
 
-        wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
-
         if (selectedId.equals(target.id())) {
+            wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
             message(player, "message.fluxbound.wrench.cleared");
             return;
         }
@@ -114,14 +112,24 @@ public class FluxboundWrenchItem extends Item
         MachineRegistryData registry = MachineRegistryData.get(level);
         MachineRecord selected = registry.find(selectedId);
 
+        // The selected machine no longer exists, for example after it was split, merged or removed.
+        if (selected == null) {
+            wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
+            message(player, "message.fluxbound.wrench.invalid");
+            return;
+        }
+
         if (!MachineAccess.has(player, selected, MachineRight.MANAGE)) {
+            wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
             message(player, "message.fluxbound.wrench.denied");
             return;
         }
 
         if (registry.tryManualJoin(level, selectedId, target.id())) {
+            wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
             message(player, "message.fluxbound.wrench.joined");
         } else {
+            // An ordinary failed join keeps the selection, so the player can try another machine.
             message(player, "message.fluxbound.wrench.incompatible");
         }
     }

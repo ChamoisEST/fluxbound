@@ -13,7 +13,7 @@
   "message.fluxbound.wrench.selected": "Selected machine (%s blocks). Right-click another machine to join.",
   "message.fluxbound.wrench.cleared": "Machine selection cleared.",
   "message.fluxbound.wrench.joined": "Machines joined successfully.",
-  "message.fluxbound.wrench.incompatible": "Cannot join: machines must be compatible, adjacent, and form a rectangle.",
+  "message.fluxbound.wrench.incompatible": "Cannot join: machines must be compatible, adjacent, and form a rectangle. Selection kept.",
   "message.fluxbound.wrench.invalid": "Machine selection is no longer valid.",
   "message.fluxbound.wrench.denied": "You do not have permission to modify this machine.",
   "message.fluxbound.wrench.failed": "Could not pick up the machine.",

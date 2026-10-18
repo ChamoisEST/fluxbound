@@ -165,7 +165,7 @@ public class MachineRegistryData extends SavedData
             for (long packed : record.members()) {
                 BlockPos pos = BlockPos.of(packed);
 
-                if (!level.hasChunkAt(pos)) {
+                if (!level.isLoaded(pos)) {
                     continue;
                 }
 
@@ -301,7 +301,7 @@ public class MachineRegistryData extends SavedData
                         continue;
                     }
 
-                    if (level.hasChunkAt(neighbor)
+                    if (level.isLoaded(neighbor)
                             && !level.getBlockState(neighbor).is(ModBlocks.ARRIVAL_ANCHOR.get())) {
                         continue;
                     }
@@ -460,7 +460,7 @@ public class MachineRegistryData extends SavedData
             for (long packed : positions) {
                 BlockPos pos = BlockPos.of(packed);
 
-                if (level.hasChunkAt(pos)) {
+                if (level.isLoaded(pos)) {
                     tryMergeAt(level, pos);
                 }
             }

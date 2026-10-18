@@ -144,9 +144,12 @@ dependencies {
     runtimeOnly "org.appliedenergistics:guideme:${guideme_version}"
 
 
-// Optional mods used only while developing Fluxbound.
-    localRuntime "curse.maven:jei-238222:9144044"
-    localRuntime "curse.maven:jade-324717:9156414"
+    // Optional mods used only while developing Fluxbound.
+    // Run with -PnoOptionalMods (e.g. ./gradlew runClient -PnoOptionalMods) to test without Jade and JEI.
+    if (!providers.gradleProperty('noOptionalMods').isPresent()) {
+        localRuntime "curse.maven:jei-238222:9144044"
+        localRuntime "curse.maven:jade-324717:9156414"
+    }
     compileOnly "curse.maven:jade-324717:9156414"
 
     localRuntime "curse.maven:powah-rearchitected-633483:8025339"
