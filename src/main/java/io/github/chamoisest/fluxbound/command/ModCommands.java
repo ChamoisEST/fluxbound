@@ -7,6 +7,10 @@ import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
 import io.github.chamoisest.fluxbound.machine.permission.AccessMode;
 import io.github.chamoisest.fluxbound.machine.permission.MachineAccess;
 import io.github.chamoisest.fluxbound.machine.permission.MachineRight;
+import io.github.chamoisest.fluxbound.machine.permission.MachineRights;
+import io.github.chamoisest.fluxbound.machine.permission.PermissionNames;
+import io.github.chamoisest.fluxbound.machine.permission.PermissionChange;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -40,6 +44,11 @@ public final class ModCommands
             var rightNode = Commands.literal(right.name().toLowerCase(Locale.ROOT));
 
             for (AccessMode mode : AccessMode.values()) {
+                if (!mode.selectable())
+                {
+                    continue;
+                }
+
                 rightNode.then(Commands.literal(mode.name().toLowerCase(Locale.ROOT))
                         .executes(context -> setMode(context.getSource(), right, mode)));
             }
@@ -81,18 +90,21 @@ public final class ModCommands
         ServerPlayer player = source.getPlayerOrException();
         MachineRecord machine = lookedAt(source);
 
-        if (!MachineAccess.has(player, machine, MachineRight.MANAGE)) {
-            source.sendFailure(Component.literal("No machine selected, or Manage permission denied."));
+        if (!MachineAccess.has(player, machine, MachineRight.MANAGE))
+        {
+            source.sendFailure(Component.translatable("commands.fluxbound.denied"));
             return 0;
         }
 
-        for (MachineRight right : MachineRight.values()) {
-            String text = right + ": " + machine.permissions().mode(right);
-            source.sendSuccess(() -> Component.literal(text), false);
+        for (MachineRight right : MachineRights.of(machine))
+        {
+            Component line = Component.translatable("commands.fluxbound.access.show.mode",
+                    PermissionNames.right(right), PermissionNames.mode(machine.permissions().mode(right)));
+            source.sendSuccess(() -> line, false);
         }
 
-        source.sendSuccess(() -> Component.literal(
-                "Trusted players: " + machine.permissions().trusted().size()), false);
+        source.sendSuccess(() -> Component.translatable("commands.fluxbound.access.show.trusted",
+                machine.permissions().trusted().size()), false);
 
         return 1;
     }
@@ -103,14 +115,45 @@ public final class ModCommands
         ServerPlayer player = source.getPlayerOrException();
         MachineRecord machine = lookedAt(source);
 
-        if (machine == null || !MachineRegistryData.get(source.getLevel())
-                .setAccessMode(player, machine.id(), right, mode)) {
-            source.sendFailure(Component.literal("No machine selected, or Manage permission denied."));
-            return 0;
+        PermissionChange result = machine == null
+                ? PermissionChange.DENIED
+                : MachineRegistryData.get(source.getLevel()).setAccessMode(player, machine.id(), right, mode);
+
+        switch (result)
+        {
+            case DENIED ->
+            {
+                source.sendFailure(Component.translatable("commands.fluxbound.denied"));
+                return 0;
+            }
+            case RIGHT_NOT_USED ->
+            {
+                source.sendFailure(Component.translatable("commands.fluxbound.access.right_not_used",
+                        PermissionNames.right(right)));
+                return 0;
+            }
+            case MODE_UNAVAILABLE ->
+            {
+                source.sendFailure(Component.translatable("commands.fluxbound.access.mode_unavailable",
+                        PermissionNames.mode(mode)));
+                return 0;
+            }
+            case APPLIED ->
+            {
+                source.sendSuccess(() -> Component.translatable("commands.fluxbound.access.set",
+                        PermissionNames.right(right), PermissionNames.mode(mode)), false);
+
+                if (right == MachineRight.MANAGE && mode == AccessMode.EVERYONE)
+                {
+                    source.sendSuccess(() -> Component.translatable("commands.fluxbound.access.everyone_warning")
+                            .withStyle(ChatFormatting.YELLOW), false);
+                }
+
+                return 1;
+            }
         }
 
-        source.sendSuccess(() -> Component.literal(right + " set to " + mode), false);
-        return 1;
+        return 0;
     }
 
     private static int setTrusted(CommandSourceStack source, ServerPlayer target, boolean enabled)
@@ -120,13 +163,14 @@ public final class ModCommands
         MachineRecord machine = lookedAt(source);
 
         if (machine == null || !MachineRegistryData.get(source.getLevel())
-                .setTrusted(player, machine.id(), target.getUUID(), enabled)) {
-            source.sendFailure(Component.literal("No machine selected, or Manage permission denied."));
+                .setTrusted(player, machine.id(), target.getUUID(), enabled))
+        {
+            source.sendFailure(Component.translatable("commands.fluxbound.denied"));
             return 0;
         }
 
-        String action = enabled ? "Trusted" : "Untrusted";
-        source.sendSuccess(() -> Component.literal(action + " " + target.getName().getString()), false);
+        String key = enabled ? "commands.fluxbound.trust.added" : "commands.fluxbound.trust.removed";
+        source.sendSuccess(() -> Component.translatable(key, target.getName()), false);
         return 1;
     }
 }

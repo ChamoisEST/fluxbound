@@ -64,6 +64,6 @@ See [Selecting and Joining Machines](wrench.md#selecting-and-joining-machines) f
 
 Configured permissions survive when a machine is packed, even if it has no FE stored. Such items do not stack with unconfigured machines.
 
-An empty machine with default permissions becomes an ordinary stackable item when picked up. Sneak-placement does not count as persistent configuration.
+An empty machine with default permissions becomes an ordinary stackable item when picked up. Placing an Anchor separately does not count as persistent configuration.
 
 For the differences between survival mining, creative destruction, explosions, and wrench pickup, read [Breaking and Picking Up Machines](arrival_anchor.md#breaking-and-picking-up-machines).

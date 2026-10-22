@@ -3,10 +3,16 @@ package io.github.chamoisest.fluxbound.machine.block;
 
 import io.github.chamoisest.fluxbound.Fluxbound;
 import io.github.chamoisest.fluxbound.machine.blockentity.ArrivalAnchorBlockEntity;
+import io.github.chamoisest.fluxbound.machine.data.MachineRecord;
+import io.github.chamoisest.fluxbound.menu.arrivalanchor.ArrivalAnchorMenu;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.phys.BlockHitResult;
 import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
 import io.github.chamoisest.fluxbound.registry.ModDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -51,6 +57,32 @@ public class ArrivalAnchorBlock extends Block implements EntityBlock
     }
 
 
+    // Opens the management menu like a vanilla container. Sneaking while holding an item skips this
+    // in vanilla code, so the item is used instead (for example, placing an Anchor against this one).
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
+                                               Player player, BlockHitResult hitResult)
+    {
+        if (level instanceof ServerLevel serverLevel && player instanceof ServerPlayer serverPlayer)
+        {
+            String dimension = serverLevel.dimension().identifier().toString();
+            MachineRecord record = MachineRegistryData.get(serverLevel).findAt(dimension, pos.asLong());
+
+            if (record != null)
+            {
+                String machineId = record.id();
+
+                serverPlayer.openMenu(new SimpleMenuProvider(
+                        (containerId, inventory, menuPlayer) ->
+                                new ArrivalAnchorMenu(containerId, serverPlayer, serverLevel, pos, machineId),
+                        getName()));
+            }
+        }
+
+        return InteractionResult.SUCCESS;
+    }
+
+
 
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack)
@@ -78,7 +110,9 @@ public class ArrivalAnchorBlock extends Block implements EntityBlock
 
         registry.assignOwner(anchor.getMachineId(), player.getUUID().toString());
 
-        if (player.isShiftKeyDown()) {
+        // The client sends its Sprint key state (Ctrl by default) to the server with its movement
+        // input, the same way it sends Sneak. Fake players and other automation never press it.
+        if (player instanceof ServerPlayer serverPlayer && serverPlayer.getLastClientInput().sprint()) {
             registry.setAutoJoin(anchor.getMachineId(), false);
         } else {
             registry.tryMergeAt(serverLevel, pos);

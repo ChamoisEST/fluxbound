@@ -48,6 +48,20 @@ public record MachinePermissions(AccessMode use, AccessMode arrive, AccessMode m
         };
     }
 
+    // Equal in the given rights and in the trusted list. Rights a machine doesn't use are ignored.
+    public boolean sameFor(List<MachineRight> rights, MachinePermissions other)
+    {
+        for (MachineRight right : rights)
+        {
+            if (mode(right) != other.mode(right))
+            {
+                return false;
+            }
+        }
+
+        return trusted.equals(other.trusted);
+    }
+
     public MachinePermissions withTrusted(UUID player, boolean enabled)
     {
         Set<String> updated = new HashSet<>(trusted);

@@ -39,7 +39,7 @@ Both machines must:
 
 The player must have [Manage permission](permissions.md) on both machines.
 
-Manual joining works even for Anchors deliberately separated through sneak-placement. A successful join combines the stored FE, enables normal automatic joining on the result, and clears the selection.
+Manual joining works even for Anchors deliberately placed separately with the Sprint key. A successful join combines the stored FE, enables normal automatic joining on the result, and clears the selection.
 
 If a join fails, the selection is kept so you can try another machine. The selection is cleared if the selected machine no longer exists, for example after it was removed or restructured, or if you no longer have Manage permission on it.
 
@@ -55,7 +55,7 @@ The remaining placed structures retain as much FE as they can hold. Any excess F
 
 If the picked-up machine has no stored FE or meaningful configuration, the returned item is a normal stackable Arrival Anchor. Packed items preserve meaningful data, including nondefault permissions.
 
-Sneak-placement is temporary: after pickup, placing the item normally allows automatic joining again.
+Separate placement is temporary: after pickup, placing the item normally allows automatic joining again.
 
 The complete destruction and pickup rules are explained in [Breaking and Picking Up Machines](arrival_anchor.md#breaking-and-picking-up-machines).
 

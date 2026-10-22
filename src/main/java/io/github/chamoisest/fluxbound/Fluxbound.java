@@ -4,6 +4,7 @@ package io.github.chamoisest.fluxbound;
 import com.mojang.logging.LogUtils;
 import io.github.chamoisest.fluxbound.registry.*;
 import io.github.chamoisest.fluxbound.config.ModConfigs;
+import io.github.chamoisest.fluxbound.network.ModNetwork;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.bus.api.IEventBus;
@@ -26,6 +27,7 @@ public class Fluxbound {
         ModDataComponents.register(modEventBus);
         ModMenuTypes.register(modEventBus);
         modEventBus.addListener(ModCapabilities::register);
+        modEventBus.addListener(ModNetwork::register);
 
         container.registerConfig(ModConfig.Type.COMMON, ModConfigs.SPEC);
 

@@ -19,6 +19,8 @@ import io.github.chamoisest.fluxbound.machine.permission.AccessMode;
 import io.github.chamoisest.fluxbound.machine.permission.MachineAccess;
 import io.github.chamoisest.fluxbound.machine.permission.MachinePermissions;
 import io.github.chamoisest.fluxbound.machine.permission.MachineRight;
+import io.github.chamoisest.fluxbound.machine.permission.MachineRights;
+import io.github.chamoisest.fluxbound.machine.permission.PermissionChange;
 import net.minecraft.server.level.ServerPlayer;
 import io.github.chamoisest.fluxbound.machine.block.ArrivalAnchorBlock;
 import net.minecraft.world.level.block.Block;
@@ -198,7 +200,7 @@ public class MachineRegistryData extends SavedData
                 || !first.dimension().equals(second.dimension())
                 || !first.dimension().equals(level.dimension().identifier().toString())
                 || first.owner().isEmpty() || !first.owner().equals(second.owner())
-                || !first.permissions().equals(second.permissions())) {
+                || !first.permissions().sameFor(MachineRights.of(first), second.permissions())) {
             return false;
         }
 
@@ -310,7 +312,7 @@ public class MachineRegistryData extends SavedData
 
                     if (nearby == null || region.containsKey(nearby.id())
                             || !nearby.autoJoin() || !seed.owner().equals(nearby.owner())
-                            || !seed.permissions().equals(nearby.permissions())) {
+                            || !seed.permissions().sameFor(MachineRights.of(seed), nearby.permissions())) {
                         continue;
                     }
 
@@ -558,22 +560,34 @@ public class MachineRegistryData extends SavedData
     }
 
 
-    public boolean setAccessMode(ServerPlayer player, String id, MachineRight right, AccessMode mode)
+    public PermissionChange setAccessMode(ServerPlayer player, String id, MachineRight right, AccessMode mode)
     {
         MachineRecord record = machines.get(id);
 
-        if (!MachineAccess.has(player, record, MachineRight.MANAGE)) {
-            return false;
+        if (!MachineAccess.has(player, record, MachineRight.MANAGE))
+        {
+            return PermissionChange.DENIED;
+        }
+
+        if (!MachineRights.of(record).contains(right))
+        {
+            return PermissionChange.RIGHT_NOT_USED;
+        }
+
+        if (!mode.selectable())
+        {
+            return PermissionChange.MODE_UNAVAILABLE;
         }
 
         MachinePermissions updated = record.permissions().withMode(right, mode);
 
-        if (!updated.equals(record.permissions())) {
+        if (!updated.equals(record.permissions()))
+        {
             machines.put(id, record.withPermissions(updated));
             setDirty();
         }
 
-        return true;
+        return PermissionChange.APPLIED;
     }
 
     public boolean setTrusted(ServerPlayer player, String id, UUID target, boolean enabled)

@@ -58,7 +58,7 @@ Machines only join automatically when their owners and permission profiles are c
 
 Normal placement attempts to join compatible neighboring machines.
 
-**Sneak-place** an Anchor to keep it separate. That choice applies to the current placement; it is not permanently stored in the dropped item.
+Hold the **Sprint key** (Ctrl by default) while placing an Anchor to keep it separate. That choice applies only to the current placement; it is not stored in the item. With the Toggle Sprint option enabled, placements stay separate while sprinting is toggled on.
 
 Intentionally separated structures can later be joined using the <ItemLink id="fluxbound:wrench" />, provided their combined shape is a valid rectangle and the joining rules are met. See [Selecting and Joining Machines](wrench.md#selecting-and-joining-machines).
 
