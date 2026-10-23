@@ -6,7 +6,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 public record MachinePermissions(AccessMode use, AccessMode arrive, AccessMode manage,
                                  AccessMode charge, List<String> trusted)
@@ -62,14 +61,18 @@ public record MachinePermissions(AccessMode use, AccessMode arrive, AccessMode m
         return trusted.equals(other.trusted);
     }
 
-    public MachinePermissions withTrusted(UUID player, boolean enabled)
+    // Takes the entry as stored, so entries that aren't valid UUIDs can be removed too (never repaired silently, P5).
+    public MachinePermissions withTrusted(String storedId, boolean enabled)
     {
         Set<String> updated = new HashSet<>(trusted);
 
-        if (enabled) {
-            updated.add(player.toString());
-        } else {
-            updated.remove(player.toString());
+        if (enabled)
+        {
+            updated.add(storedId);
+        }
+        else
+        {
+            updated.remove(storedId);
         }
 
         return new MachinePermissions(use, arrive, manage, charge, List.copyOf(updated));

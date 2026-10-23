@@ -69,6 +69,10 @@ public class MachineContentPanel extends AbstractScrollArea
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a)
     {
+        // Vanilla clamps the scroll amount only when it is set, so content that got shorter (for example a removed
+        // trusted player) would leave it past the end and draw the scroller below the panel.
+        refreshScrollAmount();
+
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, INSET_SPRITE, getX() - 1, getY() - 1, width + 2, height + 2);
 
         if (tab != null)
@@ -86,15 +90,38 @@ public class MachineContentPanel extends AbstractScrollArea
     }
 
     // A widget is shown and usable only while its tab shows widgets and it is fully inside the visible area, so its
-    // hidden part can't be clicked and keyboard focus skips widgets scrolled out of view.
+    // hidden part can't be clicked and keyboard focus skips widgets scrolled out of view. A ClippedWidget is shown
+    // while any part is visible and handles its hidden part itself.
     private void extractTabWidgets(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a)
     {
         boolean shown = tab.widgetsShown();
 
         for (AbstractWidget widget : tab.widgets())
         {
-            widget.visible = shown && widget.getY() >= getY() && widget.getBottom() <= getBottom();
+            if (widget instanceof ClippedWidget clipped)
+            {
+                widget.visible = shown && widget.getHeight() > 0
+                        && widget.getBottom() > getY() && widget.getY() < getBottom();
+                clipped.setViewport(getY(), getBottom(), this::reveal);
+            }
+            else
+            {
+                widget.visible = shown && widget.getY() >= getY() && widget.getBottom() <= getBottom();
+            }
+
             widget.extractRenderState(graphics, mouseX, mouseY, a);
+        }
+    }
+
+    private void reveal(int top, int bottom)
+    {
+        if (top < getY())
+        {
+            setScrollAmount(scrollAmount() - (getY() - top));
+        }
+        else if (bottom > getBottom())
+        {
+            setScrollAmount(scrollAmount() + (bottom - getBottom()));
         }
     }
 

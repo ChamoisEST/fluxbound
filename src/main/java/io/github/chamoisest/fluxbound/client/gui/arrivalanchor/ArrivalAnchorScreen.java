@@ -5,19 +5,21 @@ import io.github.chamoisest.fluxbound.client.gui.MachineStatus;
 import io.github.chamoisest.fluxbound.client.gui.tab.PermissionsTab;
 import io.github.chamoisest.fluxbound.client.gui.tab.TrustedPlayersTab;
 import io.github.chamoisest.fluxbound.client.gui.widget.EnergyBar;
-import io.github.chamoisest.fluxbound.machine.permission.AccessMode;
-import io.github.chamoisest.fluxbound.machine.permission.MachineRight;
 import io.github.chamoisest.fluxbound.machine.permission.MachineRights;
 import io.github.chamoisest.fluxbound.menu.arrivalanchor.ArrivalAnchorMenu;
+import io.github.chamoisest.fluxbound.network.menu.AddTrustedPlayerPayload;
 import io.github.chamoisest.fluxbound.network.menu.MachinePermissionsPayload;
+import io.github.chamoisest.fluxbound.network.menu.RemoveTrustedPlayerPayload;
 import io.github.chamoisest.fluxbound.network.menu.SetAccessModePayload;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 public class ArrivalAnchorScreen extends MachineScreen<ArrivalAnchorMenu>
 {
@@ -44,8 +46,11 @@ public class ArrivalAnchorScreen extends MachineScreen<ArrivalAnchorMenu>
                         text("arrival_anchor.right." + right.name().toLowerCase(Locale.ROOT))))
                 .toList();
 
-        addTab(new PermissionsTab(font, menu::getPermissions, rights, this, this::requestAccessMode));
-        addTab(new TrustedPlayersTab(menu::getPermissions));
+        addTab(new PermissionsTab(font, menu::getPermissions, rights, this,
+                (right, mode) -> send(id -> new SetAccessModePayload(menu.containerId, id, right, mode))));
+        addTab(new TrustedPlayersTab(font, menu::getPermissions, menu::getTrustResult, this,
+                name -> send(id -> new AddTrustedPlayerPayload(menu.containerId, id, name)),
+                storedId -> send(id -> new RemoveTrustedPlayerPayload(menu.containerId, id, storedId))));
     }
 
     @Override
@@ -64,14 +69,13 @@ public class ArrivalAnchorScreen extends MachineScreen<ArrivalAnchorMenu>
 
     // Names the machine from the latest Permissions sync, so the server can refuse the request if the menu is now
     // bound to a different machine (M1 D3).
-    private void requestAccessMode(MachineRight right, AccessMode mode)
+    private void send(Function<String, CustomPacketPayload> request)
     {
         MachinePermissionsPayload permissions = menu.getPermissions();
 
         if (permissions != null)
         {
-            ClientPacketDistributor.sendToServer(
-                    new SetAccessModePayload(menu.containerId, permissions.machineId(), right, mode));
+            ClientPacketDistributor.sendToServer(request.apply(permissions.machineId()));
         }
     }
 

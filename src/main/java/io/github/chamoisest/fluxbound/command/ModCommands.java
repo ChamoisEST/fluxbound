@@ -10,11 +10,15 @@ import io.github.chamoisest.fluxbound.machine.permission.MachineRight;
 import io.github.chamoisest.fluxbound.machine.permission.MachineRights;
 import io.github.chamoisest.fluxbound.machine.permission.PermissionNames;
 import io.github.chamoisest.fluxbound.machine.permission.PermissionChange;
+import io.github.chamoisest.fluxbound.machine.permission.TrustChange;
+import io.github.chamoisest.fluxbound.machine.permission.TrustRequests;
+import io.github.chamoisest.fluxbound.menu.PlayerNames;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.BlockHitResult;
@@ -23,9 +27,15 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import java.util.Locale;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @EventBusSubscriber(modid = Fluxbound.MODID)
 public final class ModCommands
@@ -58,23 +68,26 @@ public final class ModCommands
 
         root.then(access);
 
+        // Plain names rather than entity arguments, so offline players can be added and removed too (M1 B6-7).
         root.then(Commands.literal("trust")
                 .then(Commands.literal("add")
-                        .then(Commands.argument("player", EntityArgument.player())
-                                .executes(context -> setTrusted(context.getSource(),
-                                        EntityArgument.getPlayer(context, "player"), true))))
+                        .then(Commands.argument("player", StringArgumentType.word())
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                        context.getSource().getOnlinePlayerNames(), builder))
+                                .executes(context -> addTrusted(context.getSource(),
+                                        StringArgumentType.getString(context, "player")))))
                 .then(Commands.literal("remove")
-                        .then(Commands.argument("player", EntityArgument.player())
-                                .executes(context -> setTrusted(context.getSource(),
-                                        EntityArgument.getPlayer(context, "player"), false)))));
+                        .then(Commands.argument("player", StringArgumentType.word())
+                                .suggests(ModCommands::suggestTrusted)
+                                .executes(context -> removeTrusted(context.getSource(),
+                                        StringArgumentType.getString(context, "player"))))));
 
         event.getDispatcher().register(root);
     }
 
-    private static MachineRecord lookedAt(CommandSourceStack source) throws CommandSyntaxException
+    private static MachineRecord lookedAt(ServerPlayer player)
     {
-        ServerPlayer player = source.getPlayerOrException();
-        ServerLevel level = source.getLevel();
+        ServerLevel level = player.level();
         HitResult hit = player.pick(6.0, 0.0F, false);
 
         if (!(hit instanceof BlockHitResult blockHit) || hit.getType() != HitResult.Type.BLOCK) {
@@ -88,7 +101,7 @@ public final class ModCommands
     private static int show(CommandSourceStack source) throws CommandSyntaxException
     {
         ServerPlayer player = source.getPlayerOrException();
-        MachineRecord machine = lookedAt(source);
+        MachineRecord machine = lookedAt(player);
 
         if (!MachineAccess.has(player, machine, MachineRight.MANAGE))
         {
@@ -113,7 +126,7 @@ public final class ModCommands
             throws CommandSyntaxException
     {
         ServerPlayer player = source.getPlayerOrException();
-        MachineRecord machine = lookedAt(source);
+        MachineRecord machine = lookedAt(player);
 
         PermissionChange result = machine == null
                 ? PermissionChange.DENIED
@@ -156,21 +169,91 @@ public final class ModCommands
         return 0;
     }
 
-    private static int setTrusted(CommandSourceStack source, ServerPlayer target, boolean enabled)
-            throws CommandSyntaxException
+    // The machine is the one looked at when the command runs, even if the name lookup finishes later.
+    private static int addTrusted(CommandSourceStack source, String name) throws CommandSyntaxException
     {
         ServerPlayer player = source.getPlayerOrException();
-        MachineRecord machine = lookedAt(source);
+        MachineRecord machine = lookedAt(player);
 
-        if (machine == null || !MachineRegistryData.get(source.getLevel())
-                .setTrusted(player, machine.id(), target.getUUID(), enabled))
+        if (machine == null)
         {
             source.sendFailure(Component.translatable("commands.fluxbound.denied"));
             return 0;
         }
 
-        String key = enabled ? "commands.fluxbound.trust.added" : "commands.fluxbound.trust.removed";
-        source.sendSuccess(() -> Component.translatable(key, target.getName()), false);
+        // The answer can arrive after the command has finished, so it goes to chat directly.
+        TrustRequests.add(player, machine.id(), name, requester -> true, ModCommands::sendTrustFeedback);
         return 1;
+    }
+
+    // Matched against the machine's own list by stored ID or cached name, so no lookup is needed and players who
+    // renamed but haven't rejoined are still found under the name the list shows (M1 B6a-2).
+    private static int removeTrusted(CommandSourceStack source, String name) throws CommandSyntaxException
+    {
+        ServerPlayer player = source.getPlayerOrException();
+        MachineRecord machine = lookedAt(player);
+
+        if (!MachineAccess.has(player, machine, MachineRight.MANAGE))
+        {
+            source.sendFailure(Component.translatable("commands.fluxbound.denied"));
+            return 0;
+        }
+
+        MinecraftServer server = source.getServer();
+        Optional<String> storedId = machine.permissions().trusted().stream()
+                .filter(id -> id.equals(name) || PlayerNames.find(server, id).filter(name::equalsIgnoreCase).isPresent())
+                .findFirst();
+
+        if (storedId.isEmpty())
+        {
+            sendTrustFeedback(player, TrustChange.NOT_TRUSTED, name);
+            return 0;
+        }
+
+        TrustChange result = MachineRegistryData.get(source.getLevel()).removeTrusted(player, machine.id(), storedId.get());
+        sendTrustFeedback(player, result, PlayerNames.find(server, storedId.get()).orElse(storedId.get()));
+        return result == TrustChange.REMOVED ? 1 : 0;
+    }
+
+    // Only players with Manage on the looked-at machine see its trusted names.
+    private static CompletableFuture<Suggestions> suggestTrusted(CommandContext<CommandSourceStack> context,
+                                                                 SuggestionsBuilder builder)
+    {
+        if (!(context.getSource().getEntity() instanceof ServerPlayer player))
+        {
+            return builder.buildFuture();
+        }
+
+        MachineRecord machine = lookedAt(player);
+
+        if (!MachineAccess.has(player, machine, MachineRight.MANAGE))
+        {
+            return builder.buildFuture();
+        }
+
+        MinecraftServer server = context.getSource().getServer();
+
+        return SharedSuggestionProvider.suggest(machine.permissions().trusted().stream()
+                .map(id -> PlayerNames.find(server, id).orElse(id)), builder);
+    }
+
+    private static void sendTrustFeedback(ServerPlayer player, TrustChange result, String name)
+    {
+        Component message = switch (result)
+        {
+            case ADDED -> Component.translatable("commands.fluxbound.trust.added", name);
+            case REMOVED -> Component.translatable("commands.fluxbound.trust.removed", name);
+            case DENIED -> Component.translatable("commands.fluxbound.denied");
+            case ALREADY_TRUSTED -> Component.translatable("commands.fluxbound.trust.already_trusted", name);
+            case NOT_TRUSTED -> Component.translatable("commands.fluxbound.trust.not_trusted", name);
+            case IS_OWNER -> Component.translatable("commands.fluxbound.trust.is_owner", name);
+            case INVALID_NAME -> Component.translatable("commands.fluxbound.trust.invalid_name", name);
+            case NOT_FOUND -> Component.translatable("commands.fluxbound.trust.not_found", name);
+            case LOOKUP_FAILED -> Component.translatable("commands.fluxbound.trust.lookup_failed", name);
+            case LOOKUP_BUSY -> Component.translatable("commands.fluxbound.trust.lookup_busy");
+        };
+
+        boolean success = result == TrustChange.ADDED || result == TrustChange.REMOVED;
+        player.sendSystemMessage(success ? message : message.copy().withStyle(ChatFormatting.RED));
     }
 }

@@ -5,12 +5,15 @@ import io.github.chamoisest.fluxbound.machine.data.MachineRecord;
 import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
 import io.github.chamoisest.fluxbound.machine.permission.AccessMode;
 import io.github.chamoisest.fluxbound.machine.permission.MachineRight;
+import io.github.chamoisest.fluxbound.machine.permission.TrustChange;
+import io.github.chamoisest.fluxbound.machine.permission.TrustRequests;
 import io.github.chamoisest.fluxbound.menu.MachineMenuLayout;
 import io.github.chamoisest.fluxbound.menu.MachinePermissionsSnapshot;
 import io.github.chamoisest.fluxbound.menu.MenuSyncTracker;
 import io.github.chamoisest.fluxbound.menu.PlayerNames;
 import io.github.chamoisest.fluxbound.network.menu.MachineOverviewPayload;
 import io.github.chamoisest.fluxbound.network.menu.MachinePermissionsPayload;
+import io.github.chamoisest.fluxbound.network.menu.TrustResultPayload;
 import io.github.chamoisest.fluxbound.registry.ModBlocks;
 import io.github.chamoisest.fluxbound.registry.ModMenuTypes;
 import net.minecraft.core.BlockPos;
@@ -22,6 +25,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class ArrivalAnchorMenu extends AbstractContainerMenu
 {
@@ -45,6 +49,9 @@ public class ArrivalAnchorMenu extends AbstractContainerMenu
 
     // Client side only; null until the first Permissions payload arrives.
     private MachinePermissionsPayload permissions;
+
+    // Client side only; the answer to the viewer's last trust request, null until there is one.
+    private TrustResultPayload trustResult;
 
     // Client constructor, called through the menu type when the server opens the menu.
     public ArrivalAnchorMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf extraData)
@@ -96,16 +103,50 @@ public class ArrivalAnchorMenu extends AbstractContainerMenu
         this.permissions = permissions;
     }
 
-    // Server side: a viewer's request from the Permissions tab. Ignored unless the menu is still valid and still
-    // bound to the machine the client named (M1 D3); the result reaches the client through the next sync (B5-1).
+    public TrustResultPayload getTrustResult()
+    {
+        return trustResult;
+    }
+
+    public void setTrustResult(TrustResultPayload trustResult)
+    {
+        this.trustResult = trustResult;
+    }
+
+    // Server side: a viewer's request from the Permissions tab. The result reaches the client through the next
+    // sync (B5-1).
     public void requestAccessMode(String requestedMachineId, MachineRight right, AccessMode mode)
     {
-        if (level == null || !machineId.equals(requestedMachineId) || !stillValid(viewer))
+        if (!acceptsRequest(requestedMachineId))
         {
             return;
         }
 
         MachineRegistryData.get(level).setAccessMode(viewer, machineId, right, mode);
+    }
+
+    // Server side: a viewer's request from the Trusted Players tab. A lookup's answer is only applied and sent
+    // while this menu is still open (M1 B6-4).
+    public void requestAddTrusted(String requestedMachineId, String name)
+    {
+        if (!acceptsRequest(requestedMachineId))
+        {
+            return;
+        }
+
+        TrustRequests.add(viewer, machineId, name,
+                player -> player.containerMenu == this && stillValid(player), this::sendTrustResult);
+    }
+
+    public void requestRemoveTrusted(String requestedMachineId, String storedId)
+    {
+        if (!acceptsRequest(requestedMachineId))
+        {
+            return;
+        }
+
+        TrustChange result = MachineRegistryData.get(level).removeTrusted(viewer, machineId, storedId);
+        sendTrustResult(viewer, result, PlayerNames.find(level.getServer(), storedId).orElse(storedId));
     }
 
     // Called by ServerPlayer.tick every tick, before stillValid.
@@ -182,6 +223,17 @@ public class ArrivalAnchorMenu extends AbstractContainerMenu
 
         slot.onTake(player, stack);
         return original;
+    }
+
+    // Requests are ignored unless the menu is still valid and bound to the machine the client named (M1 D3).
+    private boolean acceptsRequest(String requestedMachineId)
+    {
+        return level != null && machineId.equals(requestedMachineId) && stillValid(viewer);
+    }
+
+    private void sendTrustResult(ServerPlayer requester, TrustChange result, String name)
+    {
+        PacketDistributor.sendToPlayer(requester, new TrustResultPayload(containerId, result, name));
     }
 
     // The machine the menu was opened for, if the clicked block still belongs to it.

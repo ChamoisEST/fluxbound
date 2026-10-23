@@ -8,9 +8,7 @@ item_ids:
 
 # Arrival Anchor
 
-The Arrival Anchor is Fluxbound's first stationary machine. It is intended to serve as a destination for teleportation and cannot initiate teleportation by itself.
-
-**Player teleportation reception and handheld charging are not implemented yet.** The Anchor currently provides FE storage, rectangular multiblocks, machine ownership, and configurable permissions.
+The Arrival Anchor is Fluxbound's first stationary machine: a destination that players arrive at, which cannot send anyone away by itself. It stores FE, combines with neighbouring Anchors into rectangular multiblocks, and belongs to an owner who decides who may use and manage it.
 
 ## Crafting
 
@@ -31,8 +29,6 @@ Server operators and players can change these values in `config/fluxbound-common
 FE can enter through the **bottom and four horizontal sides**, but **not through the top**. The top is reserved for players, although this does not prevent other blocks from being physically placed above it.
 
 You can supply energy using compatible external generators and cables. When the optional Jade mod is installed, looking at an Anchor shows its stored FE in a red energy bar.
-
-Handheld charging is planned but is not functional yet.
 
 ## Multiblocks
 
@@ -61,6 +57,22 @@ Normal placement attempts to join compatible neighboring machines.
 Hold the **Sprint key** (Ctrl by default) while placing an Anchor to keep it separate. That choice applies only to the current placement; it is not stored in the item. With the Toggle Sprint option enabled, placements stay separate while sprinting is toggled on.
 
 Intentionally separated structures can later be joined using the <ItemLink id="fluxbound:wrench" />, provided their combined shape is a valid rectangle and the joining rules are met. See [Selecting and Joining Machines](wrench.md#selecting-and-joining-machines).
+
+## Management Screen
+
+Right-click an Anchor to open its management screen. This works with an empty hand or while holding most items. To place a block against an Anchor instead, hold **Sneak** while right-clicking. Any player can open the screen; the settings tabs require **Manage** permission.
+
+The bar on the left shows the machine's energy. Hover over it to see the stored FE, the capacity, and the maximum input of the whole multiblock.
+
+The tabs above the screen switch between:
+
+- **Overview:** the owner, the number of blocks, the dimension, and the approximate centre position of the multiblock.
+- **Permissions:** who may arrive at, manage, and charge from this machine. See [Configuring in the Screen](permissions.md#configuring-in-the-screen).
+- **Trusted Players:** the players who receive the rights set to **Trusted**. See [Trusted Players](permissions.md#trusted-players).
+
+Players without Manage permission can still see the Overview; the other two tabs tell them that Manage permission is required.
+
+The hover tooltip on the **?** at the top right of each tab explains that tab. The screen closes when you move too far away, when the clicked block is removed, or when the multiblock is split or merged into a different machine. Reopen it to see the new machine.
 
 ## Breaking and Picking Up Machines
 
@@ -92,14 +104,10 @@ Read [Picking Up Machine Blocks](wrench.md#picking-up-machine-blocks) for the wr
 
 ## Ownership and Permissions
 
-Every placed Anchor has an owner. Four independent permissions control **Use**, **Arrive**, **Manage**, and **Charge** access, all defaulting to Owner Only.
+Every placed Anchor has an owner. Three permissions apply to Anchors: **Arrive**, **Manage**, and **Charge**, all defaulting to Owner Only.
 
-Manage permission currently protects wrench interactions and permission editing. The other rights are saved but will take effect when teleportation and handheld charging are implemented.
+Manage permission controls the wrench, the Permissions and Trusted Players tabs of the management screen, and the permission commands.
 
 Permission settings apply to the entire logical multiblock and survive packed pickup. Machines with different permission profiles cannot currently join.
 
 See [Machine Permissions](permissions.md) for access modes, trusted players, and configuration commands.
-
-## Future Features
-
-Arrival Anchors are planned to receive arriving players through teleportation links and charge handheld teleporters. Machine-management screens and additional settings are also planned.

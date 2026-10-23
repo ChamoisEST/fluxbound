@@ -21,6 +21,7 @@ import io.github.chamoisest.fluxbound.machine.permission.MachinePermissions;
 import io.github.chamoisest.fluxbound.machine.permission.MachineRight;
 import io.github.chamoisest.fluxbound.machine.permission.MachineRights;
 import io.github.chamoisest.fluxbound.machine.permission.PermissionChange;
+import io.github.chamoisest.fluxbound.machine.permission.TrustChange;
 import net.minecraft.server.level.ServerPlayer;
 import io.github.chamoisest.fluxbound.machine.block.ArrivalAnchorBlock;
 import net.minecraft.world.level.block.Block;
@@ -590,22 +591,50 @@ public class MachineRegistryData extends SavedData
         return PermissionChange.APPLIED;
     }
 
-    public boolean setTrusted(ServerPlayer player, String id, UUID target, boolean enabled)
+    public TrustChange addTrusted(ServerPlayer player, String id, UUID target)
     {
         MachineRecord record = machines.get(id);
 
-        if (!MachineAccess.has(player, record, MachineRight.MANAGE)) {
-            return false;
+        if (!MachineAccess.has(player, record, MachineRight.MANAGE))
+        {
+            return TrustChange.DENIED;
         }
 
-        MachinePermissions updated = record.permissions().withTrusted(target, enabled);
+        String targetId = target.toString();
 
-        if (!updated.equals(record.permissions())) {
-            machines.put(id, record.withPermissions(updated));
-            setDirty();
+        if (record.owner().equals(targetId))
+        {
+            return TrustChange.IS_OWNER;
         }
 
-        return true;
+        if (record.permissions().trusted().contains(targetId))
+        {
+            return TrustChange.ALREADY_TRUSTED;
+        }
+
+        machines.put(id, record.withPermissions(record.permissions().withTrusted(targetId, true)));
+        setDirty();
+        return TrustChange.ADDED;
+    }
+
+    // Takes the entry as stored, so entries that aren't valid UUIDs can be removed too.
+    public TrustChange removeTrusted(ServerPlayer player, String id, String storedId)
+    {
+        MachineRecord record = machines.get(id);
+
+        if (!MachineAccess.has(player, record, MachineRight.MANAGE))
+        {
+            return TrustChange.DENIED;
+        }
+
+        if (!record.permissions().trusted().contains(storedId))
+        {
+            return TrustChange.NOT_TRUSTED;
+        }
+
+        machines.put(id, record.withPermissions(record.permissions().withTrusted(storedId, false)));
+        setDirty();
+        return TrustChange.REMOVED;
     }
 
     private void updateVisualState(ServerLevel level, BlockPos pos, MachineRecord record)

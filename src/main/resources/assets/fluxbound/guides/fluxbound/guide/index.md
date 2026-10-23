@@ -8,29 +8,18 @@ item_ids:
 
 # Welcome to Fluxbound
 
-Fluxbound is a technology mod focused on modular teleportation machines, shared energy storage, and interconnected destinations.
+Fluxbound is a technology mod built around teleportation machines that store FE, combine into multiblocks, and can be shared with other players.
 
-This guide explains the equipment you can currently use and introduces the teleportation systems planned for later progression.
+This guide explains the equipment you can use and how to manage it.
 
 ## Getting Started
 
 1. Craft the [Basic Crafting Components](components.md), including the Basic Teleportation Core and Teleportation Chassis.
 2. Build your first <ItemLink id="fluxbound:arrival_anchor" /> and supply it with FE from a compatible external energy source.
 3. Expand your Anchor into a [rectangular multiblock](arrival_anchor.md#multiblocks) for more storage and faster energy input.
-4. Craft a <ItemLink id="fluxbound:wrench" /> to join structures manually or pick up machine blocks while preserving their data.
-5. Review [Machine Permissions](permissions.md) to control who can manage your equipment.
-
-The Arrival Anchor currently supports energy storage, multiblocks, and management. **Teleportation reception and handheld charging are not implemented yet.**
-
-## Teleportation Progression
-
-Fluxbound is designed around three equipment tiers:
-
-- **Basic:** Arrival Anchors and the planned Basic Handheld for travel within one dimension.
-- **Advanced:** Planned Nether-tier teleporters with outgoing travel and cross-dimensional support.
-- **Quantum:** Planned End-tier equipment with additional mobility and efficiency.
-
-The Basic Handheld and higher-tier machines are not yet available. Their guide pages and item links will be added when they are implemented.
+4. Right-click your Anchor to open its [management screen](arrival_anchor.md#management-screen).
+5. Craft a <ItemLink id="fluxbound:wrench" /> to join structures manually or pick up machine blocks while preserving their data.
+6. Review [Machine Permissions](permissions.md) to control who can manage your equipment.
 
 ## Using This Guide
 

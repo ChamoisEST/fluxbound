@@ -1,9 +1,12 @@
 package io.github.chamoisest.fluxbound.network;
 
 import io.github.chamoisest.fluxbound.network.config.ConfigSyncPayload;
+import io.github.chamoisest.fluxbound.network.menu.AddTrustedPlayerPayload;
 import io.github.chamoisest.fluxbound.network.menu.MachineOverviewPayload;
 import io.github.chamoisest.fluxbound.network.menu.MachinePermissionsPayload;
+import io.github.chamoisest.fluxbound.network.menu.RemoveTrustedPlayerPayload;
 import io.github.chamoisest.fluxbound.network.menu.SetAccessModePayload;
+import io.github.chamoisest.fluxbound.network.menu.TrustResultPayload;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
@@ -11,7 +14,7 @@ public final class ModNetwork
 {
     // Bump whenever a payload is added, removed or changes its wire format.
     // NeoForge refuses connections whose payload versions differ.
-    public static final String PROTOCOL_VERSION = "3";
+    public static final String PROTOCOL_VERSION = "4";
 
     private ModNetwork() {}
 
@@ -28,5 +31,11 @@ public final class ModNetwork
                 MachinePermissionsPayload::handleOnClient);
         registrar.playToServer(SetAccessModePayload.TYPE, SetAccessModePayload.STREAM_CODEC,
                 SetAccessModePayload::handleOnServer);
+        registrar.playToServer(AddTrustedPlayerPayload.TYPE, AddTrustedPlayerPayload.STREAM_CODEC,
+                AddTrustedPlayerPayload::handleOnServer);
+        registrar.playToServer(RemoveTrustedPlayerPayload.TYPE, RemoveTrustedPlayerPayload.STREAM_CODEC,
+                RemoveTrustedPlayerPayload::handleOnServer);
+        registrar.playToClient(TrustResultPayload.TYPE, TrustResultPayload.STREAM_CODEC,
+                TrustResultPayload::handleOnClient);
     }
 }

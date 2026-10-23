@@ -26,16 +26,6 @@ import java.util.function.Supplier;
 // choice does, so the field always shows the synced server state (M1 B5-1).
 public class DropdownWidget<T> extends AbstractButton
 {
-    // The closed field in the GUI's own colours: the frame's light grey, slightly raised with a 1 px bevel like
-    // vanilla panels, so it reads as a control without standing out (M1 B5-5, user decision). The open list stays a
-    // dark popup.
-    private static final int FIELD_FILL = 0xFFC6C6C6;
-    private static final int BEVEL_LIGHT = 0xFFFFFFFF;
-    private static final int BEVEL_DARK = 0xFF373737;
-    private static final int FIELD_TEXT_COLOR = 0xFF404040;
-    // Drawn one pixel outside the field, over the mid-grey content area, when hovered, focused or open.
-    private static final int HIGHLIGHT_OUTLINE = 0xFFFFFFFF;
-
     private static final int TEXT_PADDING = 4;
     private static final int ARROW_WIDTH = 5;
     private static final int ROW_HEIGHT = 12;
@@ -78,24 +68,15 @@ public class DropdownWidget<T> extends AbstractButton
     @Override
     protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a)
     {
-        int right = getRight();
-        int bottom = getBottom();
-
-        if (highlighted())
-        {
-            graphics.fill(getX() - 1, getY() - 1, right + 1, bottom + 1, HIGHLIGHT_OUTLINE);
-        }
-
-        // Dark, then white over all but the last column and row, then the fill: white top/left, dark bottom/right.
-        graphics.fill(getX(), getY(), right, bottom, BEVEL_DARK);
-        graphics.fill(getX(), getY(), right - 1, bottom - 1, BEVEL_LIGHT);
-        graphics.fill(getX() + 1, getY() + 1, right - 1, bottom - 1, FIELD_FILL);
+        // The closed field is raised in the GUI's own colours, so it reads as a control without standing out
+        // (M1 B5-5, user decision); the open list stays a dark popup.
+        FieldStyle.extractRaised(graphics, getX(), getY(), getRight(), getBottom(), highlighted());
 
         int textWidth = width - 3 * TEXT_PADDING - ARROW_WIDTH;
         int textY = getY() + (height - font.lineHeight) / 2 + 1;
 
         graphics.text(font, ScreenText.fitToWidth(font, label.apply(current.get()), textWidth),
-                getX() + TEXT_PADDING, textY, FIELD_TEXT_COLOR, false);
+                getX() + TEXT_PADDING, textY, FieldStyle.TEXT_COLOR, false);
         extractArrow(graphics, getRight() - TEXT_PADDING - ARROW_WIDTH, getY() + (height - 3) / 2);
     }
 
@@ -108,9 +89,9 @@ public class DropdownWidget<T> extends AbstractButton
     // A small downward triangle drawn from three lines, so no extra sprite is needed.
     private static void extractArrow(GuiGraphicsExtractor graphics, int x, int y)
     {
-        graphics.fill(x, y, x + 5, y + 1, FIELD_TEXT_COLOR);
-        graphics.fill(x + 1, y + 1, x + 4, y + 2, FIELD_TEXT_COLOR);
-        graphics.fill(x + 2, y + 2, x + 3, y + 3, FIELD_TEXT_COLOR);
+        graphics.fill(x, y, x + 5, y + 1, FieldStyle.TEXT_COLOR);
+        graphics.fill(x + 1, y + 1, x + 4, y + 2, FieldStyle.TEXT_COLOR);
+        graphics.fill(x + 2, y + 2, x + 3, y + 3, FieldStyle.TEXT_COLOR);
     }
 
     @Override

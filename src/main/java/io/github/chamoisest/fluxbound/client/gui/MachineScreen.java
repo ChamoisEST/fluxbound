@@ -8,8 +8,10 @@ import io.github.chamoisest.fluxbound.client.gui.tab.MachineTabBar;
 import io.github.chamoisest.fluxbound.menu.MachineMenuLayout;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -217,12 +219,22 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
 
     // Esc and the inventory key close an open overlay first; only with no overlay open do they close the GUI
     // (user requirement, M1 B5-5, B5b-1). Vanilla closes the screen on Esc before children see the key, hence
-    // this override. While an overlay is open no other key reaches the screen.
+    // this override. While an overlay is open no other key reaches the screen. Tab still reaches a focused text
+    // field first through super.keyPressed, so it can accept a completion before vanilla moves focus.
     @Override
     public boolean keyPressed(KeyEvent event)
     {
         if (overlay == null)
         {
+            // Like vanilla's anvil: while a text field takes input, keys never reach container shortcuts such as
+            // the inventory key or the hotbar keys. Esc still closes the GUI and Tab still moves focus (M1 B6b).
+            if (getFocused() instanceof EditBox field && field.canConsumeInput()
+                    && !event.isEscape() && !event.isCycleFocus())
+            {
+                field.keyPressed(event);
+                return true;
+            }
+
             return super.keyPressed(event);
         }
 
@@ -235,6 +247,13 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
         }
 
         return true;
+    }
+
+    // Typing never reaches a text field behind an open overlay.
+    @Override
+    public boolean charTyped(CharacterEvent event)
+    {
+        return overlay != null || super.charTyped(event);
     }
 
     // AbstractContainerScreen only handles bundle scrolling over slots and doesn't pass the wheel on to widgets.

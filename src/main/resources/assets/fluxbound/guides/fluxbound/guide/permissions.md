@@ -12,14 +12,13 @@ All blocks in one [logical multiblock](arrival_anchor.md#multiblocks) share the 
 
 ## Permission Types
 
-| Permission | Purpose | Current status |
-| --- | --- | --- |
-| **Use** | Starting teleportation from a machine | Stored; teleportation not implemented yet |
-| **Arrive** | Teleporting to a destination machine | Stored; reception not implemented yet |
-| **Manage** | Modifying settings and using the <ItemLink id="fluxbound:wrench" /> | Enforced |
-| **Charge** | Charging handheld teleporters | Stored; charging not implemented yet |
+| Permission | Controls |
+| --- | --- |
+| **Arrive** | Who may arrive at this Anchor by teleportation |
+| **Manage** | Who may change settings, edit the trusted list, and use the <ItemLink id="fluxbound:wrench" /> on the machine |
+| **Charge** | Who may charge handheld teleporters at this Anchor |
 
-All four permissions default to **Owner Only**.
+All permissions default to **Owner Only**.
 
 ## Access Modes
 
@@ -28,31 +27,45 @@ Each permission can be set independently to one of these modes:
 - **Owner:** Only the machine owner.
 - **Trusted:** The owner and players on that machine's trusted list.
 - **Everyone:** Any player.
-- **Team:** Intended for the owner's FTB Team; until that optional integration is implemented, only the owner is allowed.
 
 The owner always retains access, regardless of the selected mode.
 
+## Configuring in the Screen
+
+Open the Anchor's [management screen](arrival_anchor.md#management-screen) and select the **Permissions** tab. Click a permission's field and choose a mode from the list. The list can also be used with the arrow keys and Enter; Esc closes it.
+
+Two changes ask for confirmation first:
+
+- Setting **Manage** to **Everyone**, because every player can then change the settings and pick up the machine with the wrench.
+- A change that takes away your own Manage permission, because only the owner can give it back.
+
 ## Trusted Players
 
-Each logical machine maintains one list of trusted player UUIDs. A player on this list gains only the rights set to **Trusted**; adding someone does not automatically grant every permission.
+Each logical machine has one trusted list. A player on this list gains only the rights set to **Trusted**; adding someone does not automatically grant every permission.
 
-Trust settings are shared across all members of the same multiblock.
+In the **Trusted Players** tab of the management screen:
 
-## Configuring Permissions
+- Type a player name and press **Enter** or **Add**. While typing, the names of online players are completed in grey; press **Tab** or the right arrow key to accept. Players who are offline can be added by their exact name.
+- A message below the name field shows the result, for example when a name was not found.
+- Click the **×** next to a player to remove them. With keyboard focus on the list, the up and down arrow keys select a player and **Delete** or **Backspace** removes them.
+- Removing yourself asks for confirmation first if it would take away your own Manage permission.
 
-A graphical permissions screen is planned but not implemented yet. For now, aim directly at an Arrival Anchor from within approximately six blocks and use the server-side commands below.
+Players the server has no name for appear as "Unknown player"; hover over the entry to see their ID.
+
+## Commands
+
+Instead of the screen, you can aim directly at an Arrival Anchor from within approximately six blocks and use these commands:
 
 | Command | Effect |
 | --- | --- |
-| `/fluxbound access show` | Display current permission modes and trusted-player count |
-| `/fluxbound access use everyone` | Allow anyone to use the machine when teleportation is implemented |
-| `/fluxbound access arrive trusted` | Reserve arrival rights for trusted players when reception is implemented |
+| `/fluxbound access show` | Display the current permission modes and trusted-player count |
+| `/fluxbound access arrive trusted` | Allow trusted players to arrive at the Anchor |
 | `/fluxbound access manage trusted` | Allow trusted players to manage the machine |
-| `/fluxbound access charge owner` | Restrict future charging to the owner |
-| `/fluxbound trust add PlayerName` | Add an online player to the trusted list |
-| `/fluxbound trust remove PlayerName` | Remove an online player from the trusted list |
+| `/fluxbound access charge owner` | Allow only the owner to charge |
+| `/fluxbound trust add PlayerName` | Add a player to the trusted list by name |
+| `/fluxbound trust remove PlayerName` | Remove a player from the trusted list |
 
-Changing settings and viewing them through these commands requires **Manage** permission. Trust commands currently require the target player to be online, but saved trust uses player UUIDs.
+Viewing and changing settings through these commands requires **Manage** permission. Players who are offline can be added by their exact name.
 
 ## Multiblocks and Joining
 

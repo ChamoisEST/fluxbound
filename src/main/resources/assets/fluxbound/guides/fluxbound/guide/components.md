@@ -14,7 +14,7 @@ Fluxbound uses specialized components to construct teleportation equipment. All 
 
 ## Basic Teleportation Core
 
-The Basic Teleportation Core combines copper, redstone, and an ender pearl. It is the foundation of Basic-tier teleportation technology and will also be used in later progression.
+The Basic Teleportation Core combines copper, redstone, and an ender pearl. It is the foundation of Basic-tier teleportation technology.
 
 <RecipeFor id="fluxbound:basic_teleportation_core" />
 
@@ -26,7 +26,7 @@ The Teleportation Chassis is a structural component used to construct stationary
 
 ## Teleportation Casing
 
-The Teleportation Casing is a structural crafting component intended for higher-tier stationary teleporters. Those machine recipes are not implemented yet.
+The Teleportation Casing is a structural crafting component.
 
 <RecipeFor id="fluxbound:teleportation_casing" />
 
@@ -35,5 +35,3 @@ The Teleportation Casing is a structural crafting component intended for higher-
 The Basic Teleportation Core and Teleportation Chassis are used to craft the <ItemLink id="fluxbound:arrival_anchor" />.
 
 Read the [Arrival Anchor](arrival_anchor.md) chapter to learn about energy storage, rectangular multiblocks, machine pickup, and permissions.
-
-The Basic Handheld and higher-tier machines will use additional components as their features are implemented.
