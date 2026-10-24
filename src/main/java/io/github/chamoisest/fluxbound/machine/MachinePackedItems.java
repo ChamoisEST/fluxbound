@@ -1,10 +1,10 @@
 
 package io.github.chamoisest.fluxbound.machine;
 
-import io.github.chamoisest.fluxbound.config.ModConfigs;
 import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
 import io.github.chamoisest.fluxbound.machine.data.PackedMachine;
 import io.github.chamoisest.fluxbound.machine.data.PackedMachineDisplay;
+import io.github.chamoisest.fluxbound.machine.energy.MachineEnergyRules;
 import io.github.chamoisest.fluxbound.registry.ModDataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -26,8 +26,8 @@ public final class MachinePackedItems
         stack.set(ModDataComponents.PACKED_MACHINE.get(), packed.token());
         stack.set(ModDataComponents.PACKED_DISPLAY.get(), new PackedMachineDisplay(
                 packed.energy(),
-                ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get(),
-                ModConfigs.ARRIVAL_ANCHOR_INPUT.get()
+                MachineEnergyRules.capacity(1),
+                MachineEnergyRules.inputPerTick(1)
         ));
     }
 

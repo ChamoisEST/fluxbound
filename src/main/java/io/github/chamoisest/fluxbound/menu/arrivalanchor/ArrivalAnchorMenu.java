@@ -1,8 +1,8 @@
 package io.github.chamoisest.fluxbound.menu.arrivalanchor;
 
-import io.github.chamoisest.fluxbound.config.ModConfigs;
 import io.github.chamoisest.fluxbound.machine.data.MachineRecord;
 import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
+import io.github.chamoisest.fluxbound.machine.energy.MachineEnergyRules;
 import io.github.chamoisest.fluxbound.machine.permission.AccessMode;
 import io.github.chamoisest.fluxbound.machine.permission.MachineRight;
 import io.github.chamoisest.fluxbound.machine.permission.TrustChange;
@@ -266,8 +266,8 @@ public class ArrivalAnchorMenu extends AbstractContainerMenu
                 containerId,
                 record.id(),
                 record.energy(),
-                (long) ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get() * members,
-                (long) ModConfigs.ARRIVAL_ANCHOR_INPUT.get() * members,
+                MachineEnergyRules.capacity(members),
+                MachineEnergyRules.inputPerTick(members),
                 members,
                 ownerName(record.owner()),
                 dimension,

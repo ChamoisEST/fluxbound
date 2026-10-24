@@ -2,9 +2,9 @@
 package io.github.chamoisest.fluxbound.machine.blockentity;
 
 import io.github.chamoisest.fluxbound.Fluxbound;
-import io.github.chamoisest.fluxbound.config.ModConfigs;
 import io.github.chamoisest.fluxbound.machine.data.MachineRecord;
 import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
+import io.github.chamoisest.fluxbound.machine.energy.MachineEnergyRules;
 import io.github.chamoisest.fluxbound.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -21,6 +21,9 @@ public class ArrivalAnchorBlockEntity extends BlockEntity
 {
     private String machineId;
     private PackedMachine pendingPickup;
+
+    // Not saved: the orphan warning is logged once per load of this block.
+    private boolean orphanReported;
 
     public ArrivalAnchorBlockEntity(BlockPos pos, BlockState state)
     {
@@ -70,14 +73,24 @@ public class ArrivalAnchorBlockEntity extends BlockEntity
             return;
         }
 
-        if (machineId == null || registry.find(machineId) != null) {
+        // A fresh block has no stored ID yet and becomes a new machine.
+        if (machineId == null) {
             machineId = UUID.randomUUID().toString();
             setChanged();
+            registry.ensureRegistered(machineId, dimension, worldPosition.asLong());
+
+            Fluxbound.LOGGER.info("Registered Arrival Anchor {} at {}", machineId, worldPosition);
+            return;
         }
 
-        registry.ensureRegistered(machineId, dimension, worldPosition.asLong());
-
-        Fluxbound.LOGGER.info("Registered Arrival Anchor {} at {}", machineId, worldPosition);
+        // A stored ID without a machine containing this block: lost save data or a copied block (/clone, structures).
+        // It stays inert instead of silently becoming a new, ownerless machine (M2 G2-2, spec §4, P5).
+        if (!orphanReported) {
+            orphanReported = true;
+            Fluxbound.LOGGER.warn("Arrival Anchor at {} in {} refers to machine {}, but no machine record contains "
+                    + "this position (lost save data or a copied block). It stays inert until it is broken.",
+                    worldPosition, dimension, machineId);
+        }
     }
 
     public EnergyHandler getEnergyHandler()
@@ -96,8 +109,8 @@ public class ArrivalAnchorBlockEntity extends BlockEntity
         return MachineRegistryData.get(serverLevel).getEnergyHandler(
                 machineId,
                 serverLevel,
-                Math.multiplyExact(ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get(), record.blockCount()),
-                Math.multiplyExact(ModConfigs.ARRIVAL_ANCHOR_INPUT.get(), record.blockCount())
+                Math.toIntExact(MachineEnergyRules.capacity(record.blockCount())),
+                Math.toIntExact(MachineEnergyRules.inputPerTick(record.blockCount()))
         );
     }
 

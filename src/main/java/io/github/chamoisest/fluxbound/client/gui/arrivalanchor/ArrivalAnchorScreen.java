@@ -11,7 +11,6 @@ import io.github.chamoisest.fluxbound.network.menu.AddTrustedPlayerPayload;
 import io.github.chamoisest.fluxbound.network.menu.MachinePermissionsPayload;
 import io.github.chamoisest.fluxbound.network.menu.RemoveTrustedPlayerPayload;
 import io.github.chamoisest.fluxbound.network.menu.SetAccessModePayload;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.entity.player.Inventory;
@@ -48,7 +47,8 @@ public class ArrivalAnchorScreen extends MachineScreen<ArrivalAnchorMenu>
 
         addTab(new PermissionsTab(font, menu::getPermissions, rights, this,
                 (right, mode) -> send(id -> new SetAccessModePayload(menu.containerId, id, right, mode))));
-        addTab(new TrustedPlayersTab(font, menu::getPermissions, menu::getTrustResult, this,
+        addTab(new TrustedPlayersTab(font, menu::getPermissions, menu::getTrustResult,
+                () -> menu.getOverview() == null ? null : menu.getOverview().ownerName(), this,
                 name -> send(id -> new AddTrustedPlayerPayload(menu.containerId, id, name)),
                 storedId -> send(id -> new RemoveTrustedPlayerPayload(menu.containerId, id, storedId))));
     }
@@ -59,12 +59,13 @@ public class ArrivalAnchorScreen extends MachineScreen<ArrivalAnchorMenu>
         return ONLINE;
     }
 
+    // A widget rather than background drawing, so keyboard focus can reach its values (M1 B9); added last, so it
+    // comes after the status in the Tab order.
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a)
+    protected void init()
     {
-        super.extractBackground(graphics, mouseX, mouseY, a);
-        EnergyBar.extract(graphics, font, leftPos + ENERGY_BAR_X, topPos + ENERGY_BAR_Y, menu.getOverview(),
-                mouseX, mouseY);
+        super.init();
+        addRenderableWidget(new EnergyBar(leftPos + ENERGY_BAR_X, topPos + ENERGY_BAR_Y, menu::getOverview));
     }
 
     // Names the machine from the latest Permissions sync, so the server can refuse the request if the menu is now

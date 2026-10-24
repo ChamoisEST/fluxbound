@@ -12,6 +12,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -75,7 +77,14 @@ public class FluxboundWrenchItem extends Item
         MachineRecord target = registry.findAt(level.dimension().identifier().toString(), pos.asLong());
 
         if (target == null) {
-            message(player, "message.fluxbound.wrench.invalid");
+            // No machine contains this block: its data was lost or it's a copy (M2 G2-2). It can only come back as a
+            // default item, which carries no state, so no Manage check applies (anyone can mine it as well).
+            if (player.isShiftKeyDown()) {
+                pickup(level, player, pos, stack);
+            } else {
+                message(player, "message.fluxbound.anchor.orphaned");
+            }
+
             return InteractionResult.SUCCESS;
         }
 
@@ -148,12 +157,8 @@ public class FluxboundWrenchItem extends Item
             return;
         }
 
+        // Null for an orphaned block, which comes back as a default item (attach ignores null).
         PackedMachine packed = anchor.takePendingPickup();
-
-        if (packed == null) {
-            message(player, "message.fluxbound.wrench.failed");
-            return;
-        }
 
         ItemStack result = new ItemStack(ModItems.ARRIVAL_ANCHOR.get());
         MachinePackedItems.attach(level, result, packed);
@@ -162,7 +167,12 @@ public class FluxboundWrenchItem extends Item
         // If inventory space is unavailable, drop it at the player's feet.
         player.getInventory().add(result);
 
-        if (!result.isEmpty()) {
+        if (result.isEmpty()) {
+            // No item entity exists, so vanilla's pickup sound doesn't play; same sound and values as vanilla's.
+            level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_PICKUP,
+                    SoundSource.PLAYERS, 0.2F,
+                    (player.getRandom().nextFloat() - player.getRandom().nextFloat()) * 1.4F + 2.0F);
+        } else {
             player.drop(result, false);
         }
 

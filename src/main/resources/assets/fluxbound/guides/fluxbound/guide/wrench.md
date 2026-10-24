@@ -33,7 +33,7 @@ Right-click an <ItemLink id="fluxbound:arrival_anchor" /> to select its logical 
 Both machines must:
 
 - Be horizontally adjacent.
-- Have the **same owner** and **identical permission profiles**.
+- Have the **same owner**, and either identical permission settings or default settings on at least one of them. The joined machine keeps the configured machine's settings.
 - Form one complete rectangle when joined.
 - Fit within the current **8 x 8** maximum dimensions.
 
@@ -61,6 +61,6 @@ The complete destruction and pickup rules are explained in [Breaking and Picking
 
 ## Permissions
 
-Using the wrench requires **Manage** permission on the affected machine. Joining requires Manage permission on both machines, plus matching owners and permission profiles.
+Using the wrench requires **Manage** permission on the affected machine. Joining requires Manage permission on both machines, plus the same owner and compatible permission settings (see [Selecting and Joining Machines](#selecting-and-joining-machines)).
 
 See [Machine Permissions](permissions.md) to configure access and trusted players.

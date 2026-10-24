@@ -60,6 +60,13 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
+        // Second client for multiplayer testing against runServer (own game directory and username).
+        client2 {
+            client()
+            gameDirectory = project.file('run-client2')
+            programArguments.addAll '--username', 'Dev2'
+        }
+
         server {
             server()
             programArgument '--nogui'
@@ -106,6 +113,12 @@ neoForge {
         "${mod_id}" {
             sourceSet(sourceSets.main)
         }
+    }
+
+    // JUnit tests for pure logic (M2 T1). MDG starts them with FML and this mod loaded.
+    unitTest {
+        enable()
+        testedMod = mods.named(project.mod_id)
     }
 }
 
@@ -155,6 +168,14 @@ dependencies {
     localRuntime "curse.maven:powah-rearchitected-633483:8025339"
     localRuntime "curse.maven:cloth-config-348521:7817583"
 
+    // Unit tests only (M2 T1); not part of the built mod.
+    testImplementation platform("org.junit:junit-bom:5.13.4")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

@@ -26,6 +26,7 @@ public class Fluxbound {
         ModCreativeTabs.register(modEventBus);
         ModDataComponents.register(modEventBus);
         ModMenuTypes.register(modEventBus);
+        ModRecipeSerializers.register(modEventBus);
         modEventBus.addListener(ModCapabilities::register);
         modEventBus.addListener(ModNetwork::register);
 

@@ -5,6 +5,9 @@ import io.github.chamoisest.fluxbound.Fluxbound;
 import io.github.chamoisest.fluxbound.client.gui.tab.MachineContentPanel;
 import io.github.chamoisest.fluxbound.client.gui.tab.MachineTab;
 import io.github.chamoisest.fluxbound.client.gui.tab.MachineTabBar;
+import io.github.chamoisest.fluxbound.client.gui.widget.HelpMarker;
+import io.github.chamoisest.fluxbound.client.gui.widget.InfoWidget;
+import io.github.chamoisest.fluxbound.client.gui.widget.StatusLabel;
 import io.github.chamoisest.fluxbound.menu.MachineMenuLayout;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -45,11 +48,11 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
 
     private static final int LABEL_COLOR = 0xFF404040;
     private static final int TITLE_STATUS_GAP = 6;
-    private static final int STATUS_TOOLTIP_WIDTH = 170;
 
     private final List<MachineTab> tabs = new ArrayList<>();
     private int selectedTab;
     private MachineContentPanel contentPanel;
+    private MachineTabBar tabBar;
     private @Nullable ScreenOverlay overlay;
     private boolean ignoreNextRelease;
 
@@ -99,7 +102,13 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
                 leftPos + CONTENT_X + 1, topPos + CONTENT_Y + 1, CONTENT_WIDTH - 2, CONTENT_HEIGHT - 2));
         contentPanel.setTab(tabs.get(selectedTab));
 
-        addRenderableWidget(new MachineTabBar(font, leftPos, topPos - MachineTabBar.HEIGHT, imageWidth,
+        // After the tab's widgets in the Tab order, and drawn above the panel (M1 B9).
+        addRenderableWidget(new HelpMarker(contentPanel.helpX(), contentPanel.helpY(),
+                () -> tabs.get(selectedTab).help()));
+        addRenderableWidget(new StatusLabel(font, leftPos + imageWidth - titleLabelX, topPos + titleLabelY,
+                this::status));
+
+        tabBar = addRenderableWidget(new MachineTabBar(font, leftPos, topPos - MachineTabBar.HEIGHT, imageWidth,
                 tabs, selectedTab, this::selectTab));
 
         showTabWidgets();
@@ -116,11 +125,13 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
         return !inTabRow && super.hasClickedOutside(mouseX, mouseY, left, top);
     }
 
+    // The content changes, so keyboard focus starts again at the new tab's first control (M1 B9).
     private void selectTab(int index)
     {
         selectedTab = index;
         contentPanel.setTab(tabs.get(index));
         closeOverlay();
+        clearFocus();
         showTabWidgets();
     }
 
@@ -183,6 +194,13 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
     {
         if (overlay == null)
         {
+            // Info elements reject clicks, so vanilla would leave their focus (and frame) in place after a click
+            // elsewhere (M1 B9). Other widgets keep vanilla's focus rules, e.g. the name field stays focused.
+            if (getFocused() instanceof InfoWidget)
+            {
+                clearFocus();
+            }
+
             return super.mouseClicked(event, doubleClick);
         }
 
@@ -221,11 +239,18 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
     // (user requirement, M1 B5-5, B5b-1). Vanilla closes the screen on Esc before children see the key, hence
     // this override. While an overlay is open no other key reaches the screen. Tab still reaches a focused text
     // field first through super.keyPressed, so it can accept a completion before vanilla moves focus.
+    // Ctrl+Tab / Ctrl+1…9 switch tabs first (B9).
     @Override
     public boolean keyPressed(KeyEvent event)
     {
         if (overlay == null)
         {
+            // Tab shortcuts work everywhere in the screen, also while typing (M1 B9, K1).
+            if (tabBar != null && tabBar.selectByKey(event))
+            {
+                return true;
+            }
+
             // Like vanilla's anvil: while a text field takes input, keys never reach container shortcuts such as
             // the inventory key or the hotbar keys. Esc still closes the GUI and Tab still moves focus (M1 B6b).
             if (getFocused() instanceof EditBox field && field.canConsumeInput()
@@ -296,24 +321,6 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
             {
                 graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SLOT_SPRITE,
                         leftPos + slot.x - 1, topPos + slot.y - 1, 18, 18);
-            }
-        }
-
-        // Drawn here rather than in extractLabels, because the hover check needs absolute coordinates.
-        MachineStatus status = status();
-
-        if (status != null)
-        {
-            int statusX = leftPos + statusLeft(status);
-            int statusY = topPos + titleLabelY;
-            int statusWidth = font.width(status.text());
-
-            graphics.text(font, status.text(), statusX, statusY, status.color(), false);
-
-            if (mouseX >= statusX && mouseX < statusX + statusWidth
-                    && mouseY >= statusY && mouseY < statusY + font.lineHeight)
-            {
-                graphics.setTooltipForNextFrame(font, font.split(status.help(), STATUS_TOOLTIP_WIDTH), mouseX, mouseY);
             }
         }
     }

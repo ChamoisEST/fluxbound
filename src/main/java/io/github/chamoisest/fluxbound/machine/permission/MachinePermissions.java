@@ -61,6 +61,13 @@ public record MachinePermissions(AccessMode use, AccessMode arrive, AccessMode m
         return trusted.equals(other.trusted);
     }
 
+    // No settings worth keeping (M2-D1): the given rights are all at their default and nobody is trusted. Rights a
+    // machine doesn't use are ignored, as in sameFor.
+    public boolean isDefaultFor(List<MachineRight> rights)
+    {
+        return DEFAULT.sameFor(rights, this);
+    }
+
     // Takes the entry as stored, so entries that aren't valid UUIDs can be removed too (never repaired silently, P5).
     public MachinePermissions withTrusted(String storedId, boolean enabled)
     {

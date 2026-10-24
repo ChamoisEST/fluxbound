@@ -4,17 +4,17 @@ import io.github.chamoisest.fluxbound.Fluxbound;
 import io.github.chamoisest.fluxbound.machine.energy.EnergyFormat;
 import io.github.chamoisest.fluxbound.network.menu.MachineOverviewPayload;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
-import java.util.List;
+import java.util.function.Supplier;
 
-// Vertical FE bar for the energy column left of the content area, with a tooltip on hover.
-public final class EnergyBar
+// Vertical FE bar for the energy column left of the content area, with its values as tooltip on hover or
+// keyboard focus (M1 B9).
+public final class EnergyBar extends InfoWidget
 {
     public static final int WIDTH = 18;
     public static final int HEIGHT = 76;
@@ -24,29 +24,29 @@ public final class EnergyBar
     private static final int FILL_WIDTH = WIDTH - 2;
     private static final int FILL_HEIGHT = HEIGHT - 2;
 
-    private EnergyBar() {}
+    // Null until the server has sent data; the bar stays empty and the tooltip says so.
+    private final Supplier<@Nullable MachineOverviewPayload> overview;
 
-    // A null overview means the server hasn't sent data yet; the bar stays empty and the tooltip says so.
-    public static void extract(GuiGraphicsExtractor graphics, Font font, int x, int y,
-                               @Nullable MachineOverviewPayload overview, int mouseX, int mouseY)
+    public EnergyBar(int x, int y, Supplier<@Nullable MachineOverviewPayload> overview)
     {
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, FRAME_SPRITE, x, y, WIDTH, HEIGHT);
+        super(x, y, WIDTH, HEIGHT, Component.translatable("gui.fluxbound.energy.title"));
+        this.overview = overview;
+    }
 
-        int filled = overview == null ? 0 : filledHeight(overview.energy(), overview.capacity());
+    @Override
+    protected void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a)
+    {
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, FRAME_SPRITE, getX(), getY(), WIDTH, HEIGHT);
+
+        MachineOverviewPayload current = overview.get();
+        int filled = current == null ? 0 : filledHeight(current.energy(), current.capacity());
 
         // Draws only the bottom part of the fill sprite, so the bar fills from the bottom up.
         if (filled > 0)
         {
             int top = FILL_HEIGHT - filled;
             graphics.blitSprite(RenderPipelines.GUI_TEXTURED, FILL_SPRITE, FILL_WIDTH, FILL_HEIGHT, 0, top,
-                    x + 1, y + 1 + top, FILL_WIDTH, filled);
-        }
-
-        boolean hovered = mouseX >= x && mouseX < x + WIDTH && mouseY >= y && mouseY < y + HEIGHT;
-
-        if (hovered)
-        {
-            graphics.setComponentTooltipForNextFrame(font, tooltip(overview), mouseX, mouseY);
+                    getX() + 1, getY() + 1 + top, FILL_WIDTH, filled);
         }
     }
 
@@ -68,23 +68,26 @@ public final class EnergyBar
         return Math.clamp(pixels, 1, FILL_HEIGHT - 1);
     }
 
-    private static List<Component> tooltip(@Nullable MachineOverviewPayload overview)
+    // One component with line breaks, because vanilla's Tooltip takes a single message.
+    @Override
+    protected Component tooltipContent()
     {
+        MachineOverviewPayload current = overview.get();
         Component title = Component.translatable("gui.fluxbound.energy.title");
 
-        if (overview == null)
+        if (current == null)
         {
-            return List.of(title, Component.translatable("gui.fluxbound.loading").withStyle(ChatFormatting.GRAY));
+            return Component.empty().append(title).append("\n")
+                    .append(Component.translatable("gui.fluxbound.loading").withStyle(ChatFormatting.GRAY));
         }
 
-        return List.of(
-                title,
-                Component.translatable("tooltip.fluxbound.stored").withStyle(ChatFormatting.GRAY)
-                        .append(Component.literal(EnergyFormat.stored(overview.energy(), overview.capacity()))
-                                .withStyle(ChatFormatting.WHITE)),
-                Component.translatable("tooltip.fluxbound.max_input").withStyle(ChatFormatting.GRAY)
-                        .append(Component.literal(EnergyFormat.perTick(overview.inputPerTick()))
-                                .withStyle(ChatFormatting.WHITE))
-        );
+        return Component.empty().append(title).append("\n")
+                .append(Component.translatable("tooltip.fluxbound.stored").withStyle(ChatFormatting.GRAY)
+                        .append(Component.literal(EnergyFormat.stored(current.energy(), current.capacity()))
+                                .withStyle(ChatFormatting.WHITE)))
+                .append("\n")
+                .append(Component.translatable("tooltip.fluxbound.max_input").withStyle(ChatFormatting.GRAY)
+                        .append(Component.literal(EnergyFormat.perTick(current.inputPerTick()))
+                                .withStyle(ChatFormatting.WHITE)));
     }
 }

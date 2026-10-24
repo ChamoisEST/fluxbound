@@ -2,13 +2,13 @@
 package io.github.chamoisest.fluxbound.registry;
 
 import io.github.chamoisest.fluxbound.Fluxbound;
+import io.github.chamoisest.fluxbound.item.ArrivalAnchorItem;
 import io.github.chamoisest.fluxbound.item.FluxboundWrenchItem;
 import io.github.chamoisest.fluxbound.item.TeleportationGuideItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.minecraft.world.item.BlockItem;
 
 public final class ModItems
 {
@@ -29,8 +29,10 @@ public final class ModItems
     public static final DeferredItem<Item> TELEPORTATION_CASING =
             ITEMS.registerSimpleItem("teleportation_casing");
 
-    public static final DeferredItem<BlockItem> ARRIVAL_ANCHOR =
-            ITEMS.registerSimpleBlockItem("arrival_anchor", ModBlocks.ARRIVAL_ANCHOR);
+    public static final DeferredItem<ArrivalAnchorItem> ARRIVAL_ANCHOR =
+            ITEMS.registerItem("arrival_anchor",
+                    properties -> new ArrivalAnchorItem(ModBlocks.ARRIVAL_ANCHOR.get(), properties),
+                    Item.Properties::useBlockDescriptionPrefix);
 
 
     private ModItems() {}

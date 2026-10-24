@@ -5,6 +5,7 @@ import io.github.chamoisest.fluxbound.Fluxbound;
 import io.github.chamoisest.fluxbound.machine.blockentity.ArrivalAnchorBlockEntity;
 import io.github.chamoisest.fluxbound.machine.data.MachineRecord;
 import io.github.chamoisest.fluxbound.menu.arrivalanchor.ArrivalAnchorMenu;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.phys.BlockHitResult;
@@ -77,6 +78,10 @@ public class ArrivalAnchorBlock extends Block implements EntityBlock
                                 new ArrivalAnchorMenu(containerId, serverPlayer, serverLevel, pos, machineId),
                         getName()));
             }
+            else
+            {
+                serverPlayer.sendOverlayMessage(Component.translatable("message.fluxbound.anchor.orphaned"));
+            }
         }
 
         return InteractionResult.SUCCESS;
@@ -100,6 +105,8 @@ public class ArrivalAnchorBlock extends Block implements EntityBlock
 
         String token = stack.get(ModDataComponents.PACKED_MACHINE.get());
 
+        // Normally refused by ArrivalAnchorItem before placement; reaching this means the block was placed by a path
+        // that skipped the item.
         if (token != null && !registry.restorePacked(token, serverLevel, pos, anchor)) {
             Fluxbound.LOGGER.warn("Invalid or already redeemed packed machine token: {}", token);
         }

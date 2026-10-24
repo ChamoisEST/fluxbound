@@ -2,16 +2,20 @@ package io.github.chamoisest.fluxbound.client.gui.tab;
 
 import io.github.chamoisest.fluxbound.Fluxbound;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.navigation.FocusNavigationEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.IntConsumer;
@@ -173,6 +177,42 @@ public class MachineTabBar extends AbstractWidget
             return false;
         }
 
+        select(index);
+        return true;
+    }
+
+    // Ctrl+Tab and Ctrl+Shift+Tab cycle the tabs and Ctrl+1…9 (0 = tenth) jump to one, like vanilla's
+    // TabNavigationBar; a digit beyond the last tab selects the last one. Cmd instead of Ctrl on macOS.
+    public boolean selectByKey(KeyEvent event)
+    {
+        if (!event.hasControlDownWithQuirk())
+        {
+            return false;
+        }
+
+        int digit = event.getDigit();
+        int index;
+
+        if (digit != -1)
+        {
+            index = Math.min(Math.floorMod(digit - 1, 10), tabs.size() - 1);
+        }
+        else if (event.isCycleFocus())
+        {
+            index = Math.floorMod(selected + (event.hasShiftDown() ? -1 : 1), tabs.size());
+        }
+        else
+        {
+            return false;
+        }
+
+        select(index);
+        playDownSound(Minecraft.getInstance().getSoundManager());
+        return true;
+    }
+
+    private void select(int index)
+    {
         if (index != selected)
         {
             selected = index;
@@ -180,7 +220,13 @@ public class MachineTabBar extends AbstractWidget
         }
 
         ensureVisible(index);
-        return true;
+    }
+
+    // Not a Tab stop: tabs are switched with Ctrl+Tab and Ctrl+1…9 from anywhere in the screen (M1 B9).
+    @Override
+    public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event)
+    {
+        return null;
     }
 
     @Override

@@ -42,6 +42,7 @@ CLAUDE.md
 ### Minecraft Modding ###
 run/
 !**/src/**/run/
+run-client2/
 **/src/generated/**/.cache/
 repo/
 !**/src/**/repo/

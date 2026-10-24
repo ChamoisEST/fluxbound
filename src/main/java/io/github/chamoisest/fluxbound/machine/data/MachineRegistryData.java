@@ -4,17 +4,17 @@ package io.github.chamoisest.fluxbound.machine.data;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.chamoisest.fluxbound.Fluxbound;
-import io.github.chamoisest.fluxbound.config.ModConfigs;
 import io.github.chamoisest.fluxbound.machine.blockentity.ArrivalAnchorBlockEntity;
+import io.github.chamoisest.fluxbound.machine.energy.MachineEnergyRules;
 import io.github.chamoisest.fluxbound.machine.energy.MachineEnergyStorage;
 import io.github.chamoisest.fluxbound.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import org.jspecify.annotations.Nullable;
 import io.github.chamoisest.fluxbound.machine.permission.AccessMode;
 import io.github.chamoisest.fluxbound.machine.permission.MachineAccess;
 import io.github.chamoisest.fluxbound.machine.permission.MachinePermissions;
@@ -24,6 +24,8 @@ import io.github.chamoisest.fluxbound.machine.permission.PermissionChange;
 import io.github.chamoisest.fluxbound.machine.permission.TrustChange;
 import net.minecraft.server.level.ServerPlayer;
 import io.github.chamoisest.fluxbound.machine.block.ArrivalAnchorBlock;
+import io.github.chamoisest.fluxbound.machine.data.MachineRestructuring.MergePlan;
+import io.github.chamoisest.fluxbound.machine.data.MachineRestructuring.RemovalPlan;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -31,9 +33,6 @@ import java.util.*;
 
 public class MachineRegistryData extends SavedData
 {
-    private static final int MAX_SIDE = 8;
-
-
     private static final Codec<MachineRegistryData> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
                     MachineRecord.CODEC.listOf().fieldOf("machines")
@@ -185,10 +184,18 @@ public class MachineRegistryData extends SavedData
     public void tryMergeAt(ServerLevel level, BlockPos pos)
     {
         String dimension = level.dimension().identifier().toString();
-        MachineRecord record = findAt(dimension, pos.asLong());
+        MachineRecord placed = findAt(dimension, pos.asLong());
 
-        if (record != null && record.autoJoin() && !record.owner().isEmpty()) {
-            rebuildRegion(level, record, null, 0);
+        if (placed == null) {
+            return;
+        }
+
+        MergePlan plan = MachineRestructuring.planPlacement(placed, position -> findAt(dimension, position));
+
+        if (plan != null) {
+            applyMerge(level, plan);
+            Fluxbound.LOGGER.info("Placement at {} merged {} machine(s) into {} ({} blocks)",
+                    pos, plan.absorbedIds().size(), plan.result().id(), plan.result().blockCount());
         }
     }
 
@@ -197,279 +204,93 @@ public class MachineRegistryData extends SavedData
         MachineRecord first = machines.get(firstId);
         MachineRecord second = machines.get(secondId);
 
-        if (first == null || second == null || first.id().equals(second.id())
-                || !first.dimension().equals(second.dimension())
-                || !first.dimension().equals(level.dimension().identifier().toString())
-                || first.owner().isEmpty() || !first.owner().equals(second.owner())
-                || !first.permissions().sameFor(MachineRights.of(first), second.permissions())) {
+        if (first == null || second == null
+                || !first.dimension().equals(level.dimension().identifier().toString())) {
             return false;
         }
 
-        if (!areAdjacent(first, second)) {
+        MergePlan plan = MachineRestructuring.planJoin(first, second);
+
+        if (plan == null) {
             return false;
         }
 
-        Set<Long> combined = new HashSet<>(first.members());
-        combined.addAll(second.members());
-
-        if (combined.size() != first.blockCount() + second.blockCount()
-                || !MultiblockLayout.isRectangle(combined, MAX_SIDE)) {
-            return false;
-        }
-
-        MachineRecord primary = first.blockCount() >= second.blockCount() ? first : second;
-        long combinedEnergy = first.energy() + second.energy();
-
-        retireHandler(first.id());
-        retireHandler(second.id());
-
-        machines.remove(first.id());
-        machines.remove(second.id());
-
-        MachineRecord merged = primary.withMembers(combined.stream().sorted().toList())
-                .withEnergy(combinedEnergy)
-                .withAutoJoin(true);
-
-        machines.put(merged.id(), merged);
-        inputSuspensions.put(merged.id(), level.getGameTime());
-
-        setDirty();
-        synchronizeLoadedMembers(level, List.of(merged));
-
-        Fluxbound.LOGGER.info("Manually joined machines {} and {} into {}",
-                firstId, secondId, merged.id());
-
+        applyMerge(level, plan);
+        Fluxbound.LOGGER.info("Manually joined machines {} and {} into {}", firstId, secondId, plan.result().id());
         return true;
     }
 
-    private boolean areAdjacent(MachineRecord first, MachineRecord second)
+    // Registry first, then the loaded blocks (P6). Every involved machine's energy handler is retired (I7).
+    private void applyMerge(ServerLevel level, MergePlan plan)
     {
-        for (long packed : first.members()) {
-            BlockPos pos = BlockPos.of(packed);
+        MachineRecord result = plan.result();
 
-            for (Direction direction : new Direction[]{
-                    Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
-                if (second.contains(first.dimension(), pos.relative(direction).asLong())) {
-                    return true;
-                }
-            }
+        retireHandler(result.id());
+
+        for (String id : plan.absorbedIds())
+        {
+            retireHandler(id);
+            machines.remove(id);
         }
 
-        return false;
+        machines.put(result.id(), result);
+        inputSuspensions.put(result.id(), level.getGameTime());
+
+        setDirty();
+        synchronizeLoadedMembers(level, List.of(result));
     }
 
     public PackedMachine removeMember(ServerLevel level, BlockPos pos)
     {
-        PackedMachine packed = previewPackedForRemoval(level, pos);
-
-        if (packed == null) {
-            return null;
-        }
-
         String dimension = level.dimension().identifier().toString();
         MachineRecord record = findAt(dimension, pos.asLong());
 
-        rebuildRegion(level, record, pos.asLong(), packed.energy());
-        return packed;
+        if (record == null) {
+            return null;
+        }
+
+        RemovalPlan plan = planRemoval(record, pos.asLong());
+        applyRemoval(level, record, plan, pos.asLong());
+        return packedFor(record, plan);
     }
 
-    private Map<String, MachineRecord> collectRegion(ServerLevel level, MachineRecord seed, Long removedPosition)
+    private static RemovalPlan planRemoval(MachineRecord record, long position)
     {
-        Map<String, MachineRecord> region = new LinkedHashMap<>();
-        ArrayDeque<MachineRecord> pending = new ArrayDeque<>();
-
-        region.put(seed.id(), seed);
-        pending.add(seed);
-
-        if (!seed.autoJoin() || seed.owner().isEmpty()) {
-            return region;
-        }
-
-        String dimension = seed.dimension();
-
-        while (!pending.isEmpty()) {
-            MachineRecord current = pending.removeFirst();
-
-            for (long packed : current.members()) {
-                if (removedPosition != null && packed == removedPosition.longValue()) {
-                    continue;
-                }
-
-                BlockPos pos = BlockPos.of(packed);
-
-                for (Direction direction : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
-                    BlockPos neighbor = pos.relative(direction);
-
-                    if (removedPosition != null && neighbor.asLong() == removedPosition.longValue()) {
-                        continue;
-                    }
-
-                    if (level.isLoaded(neighbor)
-                            && !level.getBlockState(neighbor).is(ModBlocks.ARRIVAL_ANCHOR.get())) {
-                        continue;
-                    }
-
-                    MachineRecord nearby = findAt(dimension, neighbor.asLong());
-
-                    if (nearby == null || region.containsKey(nearby.id())
-                            || !nearby.autoJoin() || !seed.owner().equals(nearby.owner())
-                            || !seed.permissions().sameFor(MachineRights.of(seed), nearby.permissions())) {
-                        continue;
-                    }
-
-                    region.put(nearby.id(), nearby);
-                    pending.addLast(nearby);
-                }
-            }
-        }
-
-        return region;
+        return MachineRestructuring.planRemoval(record, position, MachineEnergyRules::capacity,
+                () -> UUID.randomUUID().toString());
     }
 
-    private boolean layoutUnchanged(Map<String, MachineRecord> region, List<List<Long>> parts)
+    private static PackedMachine packedFor(MachineRecord record, RemovalPlan plan)
     {
-        if (region.size() != parts.size()) {
-            return false;
-        }
-
-        for (List<Long> part : parts) {
-            boolean found = region.values().stream().anyMatch(record ->
-                    record.blockCount() == part.size() && record.members().containsAll(part));
-
-            if (!found) {
-                return false;
-            }
-        }
-
-        return true;
+        return new PackedMachine(UUID.randomUUID().toString(), plan.packedId(), record.owner(),
+                plan.overflowEnergy(), record.permissions());
     }
 
-    private void rebuildRegion(ServerLevel level, MachineRecord seed, Long removedPosition, long reservedEnergy)
+    // Registry first, then the loaded blocks (P6). The ID-keeping piece also gets a fresh energy handler, because its
+    // capacity changed (I7).
+    private void applyRemoval(ServerLevel level, MachineRecord record, RemovalPlan plan, long removedPosition)
     {
-        Map<String, MachineRecord> region = collectRegion(level, seed, removedPosition);
+        retireHandler(record.id());
+        machines.remove(record.id());
 
-        Set<Long> survivingMembers = new HashSet<>();
-        long totalEnergy = 0;
-
-        for (MachineRecord record : region.values()) {
-            survivingMembers.addAll(record.members());
-            totalEnergy += record.energy();
-        }
-
-        if (removedPosition != null) {
-            survivingMembers.remove(removedPosition);
-        }
-
-        List<List<Long>> parts = MultiblockLayout.partition(survivingMembers, MAX_SIDE);
-
-        if (removedPosition == null && layoutUnchanged(region, parts)) {
-            return;
-        }
-
-        long capacityPerBlock = ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get();
-        long totalCapacity = capacityPerBlock * survivingMembers.size();
-        long availableEnergy = totalEnergy - reservedEnergy;
-        long retainedEnergy = Math.min(availableEnergy, totalCapacity);
-        long voidedEnergy = availableEnergy - retainedEnergy;
-
-        List<MachineRecord> previousRecords = new ArrayList<>(region.values());
-        previousRecords.sort(Comparator.comparing(MachineRecord::id));
-
-        for (MachineRecord record : previousRecords) {
-            retireHandler(record.id());
-            machines.remove(record.id());
-        }
-
-        Set<String> reusedIds = new HashSet<>();
         List<MachineRecord> replacements = new ArrayList<>();
 
-        long energyRemaining = retainedEnergy;
-        int blocksRemaining = survivingMembers.size();
+        for (MachineRestructuring.Piece piece : plan.pieces())
+        {
+            MachineRecord replacement = new MachineRecord(piece.id(), record.dimension(), piece.members(),
+                    record.owner(), piece.energy(), record.autoJoin(), record.permissions());
 
-        for (int i = 0; i < parts.size(); i++) {
-            List<Long> members = parts.get(i);
-
-            MachineRecord bestMatch = null;
-            int bestOverlap = 0;
-
-            for (MachineRecord previous : previousRecords) {
-                if (reusedIds.contains(previous.id())) {
-                    continue;
-                }
-
-                int overlap = 0;
-
-                for (long packed : members) {
-                    if (previous.members().contains(packed)) {
-                        overlap++;
-                    }
-                }
-
-                if (overlap > bestOverlap) {
-                    bestMatch = previous;
-                    bestOverlap = overlap;
-                }
-            }
-
-            String id = bestMatch != null ? bestMatch.id() : UUID.randomUUID().toString();
-            reusedIds.add(id);
-
-            long assignedEnergy = i == parts.size() - 1
-                    ? energyRemaining
-                    : energyRemaining * members.size() / blocksRemaining;
-
-            MachineRecord replacement = new MachineRecord(
-                    id,
-                    seed.dimension(),
-                    members,
-                    seed.owner(),
-                    assignedEnergy,
-                    seed.autoJoin(),
-                    seed.permissions()
-            );
-
-            machines.put(id, replacement);
-            inputSuspensions.put(id, level.getGameTime());
+            machines.put(piece.id(), replacement);
+            inputSuspensions.put(piece.id(), level.getGameTime());
             replacements.add(replacement);
-
-            energyRemaining -= assignedEnergy;
-            blocksRemaining -= members.size();
         }
 
         setDirty();
         synchronizeLoadedMembers(level, replacements);
+        level.invalidateCapabilities(BlockPos.of(removedPosition));
 
-        if (removedPosition != null) {
-            level.invalidateCapabilities(BlockPos.of(removedPosition));
-        }
-
-        if (voidedEnergy > 0) {
-            Fluxbound.LOGGER.info("Voided {} excess FE during multiblock rebuild", voidedEnergy);
-        }
-
-        Fluxbound.LOGGER.info("Rebuilt {} Arrival Anchor blocks into {} machine(s)",
-                survivingMembers.size(), replacements.size());
-    }
-
-    private void reconnectAfterSplit(ServerLevel level, Set<Long> remaining)
-    {
-        List<Long> positions = remaining.stream().sorted().toList();
-
-        boolean changed;
-
-        do {
-            int previousMachineCount = machines.size();
-
-            for (long packed : positions) {
-                BlockPos pos = BlockPos.of(packed);
-
-                if (level.isLoaded(pos)) {
-                    tryMergeAt(level, pos);
-                }
-            }
-
-            changed = machines.size() < previousMachineCount;
-        } while (changed);
+        Fluxbound.LOGGER.info("Removed a block from machine {}: {} piece(s) remain, {} FE left the placed machines",
+                record.id(), replacements.size(), plan.overflowEnergy());
     }
 
     public void registerPacked(PackedMachine packed)
@@ -480,6 +301,28 @@ public class MachineRegistryData extends SavedData
 
         packedMachines.put(packed.token(), packed);
         setDirty();
+    }
+
+    // A reset by crafting retires a packed identity for good (M2-E3). Returns the removed record, or null if the token
+    // was unknown or already redeemed. From M4, links and network membership are revoked here as well.
+    public @Nullable PackedMachine retirePacked(String token)
+    {
+        PackedMachine packed = packedMachines.remove(token);
+
+        if (packed != null)
+        {
+            setDirty();
+        }
+
+        return packed;
+    }
+
+    // Whether a packed token can be redeemed: it exists and its identity isn't placed already (I3). Read-only; the
+    // item asks before placing, restorePacked redeems afterwards.
+    public boolean canRestorePacked(String token)
+    {
+        PackedMachine packed = packedMachines.get(token);
+        return packed != null && !machines.containsKey(packed.machineId());
     }
 
     public boolean restorePacked(String token, ServerLevel level, BlockPos pos, ArrivalAnchorBlockEntity anchor)
@@ -500,8 +343,7 @@ public class MachineRegistryData extends SavedData
         retireHandler(temporary.id());
         machines.remove(temporary.id());
 
-        long capacity = ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get();
-        long restoredEnergy = Math.min(packed.energy(), capacity);
+        long restoredEnergy = Math.min(packed.energy(), MachineEnergyRules.capacity(1));
 
         MachineRecord restored = new MachineRecord(
                 packed.machineId(),
@@ -524,40 +366,15 @@ public class MachineRegistryData extends SavedData
         return true;
     }
 
+    // Same calculation as removeMember, without changing anything. The explosion path attaches the result to its
+    // drop before vanilla removes the block in the same onExplosionHit call (source-verified 26.1.2), so both agree
+    // (M2 G3-3).
     public PackedMachine previewPackedForRemoval(ServerLevel level, BlockPos pos)
     {
         String dimension = level.dimension().identifier().toString();
         MachineRecord record = findAt(dimension, pos.asLong());
 
-        if (record == null) {
-            return null;
-        }
-
-        Map<String, MachineRecord> region = collectRegion(level, record, pos.asLong());
-
-        long totalEnergy = 0;
-        int remainingBlocks = -1;
-
-        for (MachineRecord machine : region.values()) {
-            totalEnergy += machine.energy();
-            remainingBlocks += machine.blockCount();
-        }
-
-        long remainingCapacity = (long) ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get() * remainingBlocks;
-        long packedEnergy = Math.max(0, totalEnergy - remainingCapacity);
-
-        String packedId = record.blockCount() == 1
-                ? record.id()
-                : UUID.randomUUID().toString();
-
-        return new PackedMachine(
-                UUID.randomUUID().toString(),
-                packedId,
-                record.owner(),
-                packedEnergy,
-                true,
-                record.permissions()
-        );
+        return record == null ? null : packedFor(record, planRemoval(record, pos.asLong()));
     }
 
 

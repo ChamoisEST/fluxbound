@@ -2,10 +2,10 @@
 package io.github.chamoisest.fluxbound.integration.jade;
 
 import io.github.chamoisest.fluxbound.Fluxbound;
-import io.github.chamoisest.fluxbound.config.ModConfigs;
 import io.github.chamoisest.fluxbound.machine.blockentity.ArrivalAnchorBlockEntity;
 import io.github.chamoisest.fluxbound.machine.data.MachineRecord;
 import io.github.chamoisest.fluxbound.machine.data.MachineRegistryData;
+import io.github.chamoisest.fluxbound.machine.energy.MachineEnergyRules;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -39,14 +39,16 @@ public final class MachineEnergyJadeProvider implements StreamServerDataProvider
         }
 
         MachineRecord record = MachineRegistryData.get(level).find(anchor.getMachineId());
+        String dimension = level.dimension().identifier().toString();
 
-        if (record == null) {
+        // A copied block keeps the original's ID; it shows nothing unless that machine contains this block (M2 G2-2).
+        if (record == null || !record.contains(dimension, anchor.getBlockPos().asLong())) {
             return null;
         }
 
         return new EnergyInfo(
                 Math.toIntExact(record.energy()),
-                Math.multiplyExact(ModConfigs.ARRIVAL_ANCHOR_CAPACITY.get(), record.blockCount())
+                Math.toIntExact(MachineEnergyRules.capacity(record.blockCount()))
         );
     }
 

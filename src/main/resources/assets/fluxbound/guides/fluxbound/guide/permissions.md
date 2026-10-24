@@ -24,7 +24,7 @@ All permissions default to **Owner Only**.
 
 Each permission can be set independently to one of these modes:
 
-- **Owner:** Only the machine owner.
+- **Owner Only:** Only the machine owner.
 - **Trusted:** The owner and players on that machine's trusted list.
 - **Everyone:** Any player.
 
@@ -69,7 +69,7 @@ Viewing and changing settings through these commands requires **Manage** permiss
 
 ## Multiblocks and Joining
 
-Machines with different owners or permission profiles do not automatically join. Manual joining with the <ItemLink id="fluxbound:wrench" /> also currently requires the same owner and identical permissions.
+Machines with different owners or permission settings do not automatically join. With the <ItemLink id="fluxbound:wrench" />, a machine with default settings can also be joined to a configured machine of the same owner; the result keeps the configured settings.
 
 See [Selecting and Joining Machines](wrench.md#selecting-and-joining-machines) for the joining rules.
 

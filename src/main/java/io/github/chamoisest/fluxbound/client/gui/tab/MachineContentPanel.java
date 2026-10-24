@@ -2,16 +2,19 @@ package io.github.chamoisest.fluxbound.client.gui.tab;
 
 import io.github.chamoisest.fluxbound.Fluxbound;
 import io.github.chamoisest.fluxbound.client.gui.widget.HelpMarker;
+import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractScrollArea;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.Nullable;
 
 // Scrollable area that shows the selected tab. Vanilla's AbstractScrollArea provides the scroll amount,
 // scrollbar, dragging and mouse wheel; this class adds the inset frame, clipping and the tab content.
@@ -46,10 +49,23 @@ public class MachineContentPanel extends AbstractScrollArea
         return helpX() - HELP_GAP - (getX() + PADDING);
     }
 
-    // The "?" marker sits in its own column next to the scrollbar and doesn't scroll with the content.
-    private int helpX()
+    // The "?" marker sits in its own column next to the scrollbar and doesn't scroll with the content. The screen
+    // places it there as its own widget, so keyboard focus can reach it (M1 B9).
+    public int helpX()
     {
         return scrollBarX() - SCROLLBAR_GAP - HelpMarker.SIZE;
+    }
+
+    public int helpY()
+    {
+        return getY() + PADDING;
+    }
+
+    // Not a Tab stop: it has no keyboard function of its own; the tab's widgets have (M1 B9).
+    @Override
+    public @Nullable ComponentPath nextFocusPath(FocusNavigationEvent event)
+    {
+        return null;
     }
 
     @Override
@@ -82,8 +98,6 @@ public class MachineContentPanel extends AbstractScrollArea
                     contentWidth(), mouseX, mouseY);
             extractTabWidgets(graphics, mouseX, mouseY, a);
             graphics.disableScissor();
-
-            HelpMarker.extract(graphics, font, helpX(), getY() + PADDING, tab.help(), mouseX, mouseY);
         }
 
         extractScrollbar(graphics, mouseX, mouseY);

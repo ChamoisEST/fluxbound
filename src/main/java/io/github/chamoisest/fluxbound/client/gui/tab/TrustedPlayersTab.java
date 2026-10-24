@@ -45,6 +45,7 @@ public class TrustedPlayersTab implements MachineTab
     private final Font font;
     private final Supplier<MachinePermissionsPayload> permissions;
     private final Supplier<TrustResultPayload> results;
+    private final Supplier<@Nullable String> ownerName;
     private final OverlayHost host;
     private final Consumer<String> addRequest;
     private final Consumer<String> removeRequest;
@@ -57,14 +58,16 @@ public class TrustedPlayersTab implements MachineTab
     private int statusColor;
 
     // addRequest sends a typed name and removeRequest a stored ID for the open menu; the screen knows the
-    // container and machine IDs.
+    // container and machine IDs. ownerName is the owner's display name from the screen's own sync, or null while
+    // loading.
     public TrustedPlayersTab(Font font, Supplier<MachinePermissionsPayload> permissions,
-                             Supplier<TrustResultPayload> results, OverlayHost host,
-                             Consumer<String> addRequest, Consumer<String> removeRequest)
+                             Supplier<TrustResultPayload> results, Supplier<@Nullable String> ownerName,
+                             OverlayHost host, Consumer<String> addRequest, Consumer<String> removeRequest)
     {
         this.font = font;
         this.permissions = permissions;
         this.results = results;
+        this.ownerName = ownerName;
         this.host = host;
         this.addRequest = addRequest;
         this.removeRequest = removeRequest;
@@ -250,7 +253,7 @@ public class TrustedPlayersTab implements MachineTab
     }
 
     // Listed online players (the tab list, so players hidden by the server stay hidden) who aren't trusted yet,
-    // without the viewer.
+    // without the viewer and the owner. The server would refuse the owner anyway.
     private List<String> suggestions()
     {
         Minecraft minecraft = Minecraft.getInstance();
@@ -262,6 +265,7 @@ public class TrustedPlayersTab implements MachineTab
         }
 
         String own = minecraft.player.getGameProfile().name();
+        String owner = ownerName.get();
         Set<String> trusted = trusted().stream()
                 .map(TrustedPlayer::name)
                 .flatMap(Optional::stream)
@@ -270,7 +274,8 @@ public class TrustedPlayersTab implements MachineTab
 
         return connection.getListedOnlinePlayers().stream()
                 .map(info -> info.getProfile().name())
-                .filter(name -> !name.equalsIgnoreCase(own) && !trusted.contains(name.toLowerCase(Locale.ROOT)))
+                .filter(name -> !name.equalsIgnoreCase(own) && !name.equalsIgnoreCase(owner)
+                        && !trusted.contains(name.toLowerCase(Locale.ROOT)))
                 .toList();
     }
 

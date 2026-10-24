@@ -46,7 +46,7 @@ The **top surface visually connects into one continuous cyan teleportation field
 
 The outer side walls use a continuous dark-steel casing with a slim cyan indicator line. Copper reinforcing posts appear only at the outside corners, rather than repeating on every member block.
 
-Incomplete shapes remain divided into valid rectangular structures. Placing or removing blocks can repartition the surrounding compatible region. Multiblocks can cross chunk boundaries without forcing chunks to stay loaded.
+A placed Anchor joins a neighbouring machine only if together they form a complete rectangle; placing never splits an existing machine. Multiblocks can cross chunk boundaries without forcing chunks to stay loaded.
 
 Machines only join automatically when their owners and permission profiles are compatible. See [Machine Permissions](permissions.md).
 
@@ -72,19 +72,23 @@ The tabs above the screen switch between:
 
 Players without Manage permission can still see the Overview; the other two tabs tell them that Manage permission is required.
 
-The hover tooltip on the **?** at the top right of each tab explains that tab. The screen closes when you move too far away, when the clicked block is removed, or when the multiblock is split or merged into a different machine. Reopen it to see the new machine.
+The **?** at the top right of each tab explains that tab when you hover over it. With the keyboard, **Tab** moves between the screen's controls and shows the same explanations, and **Ctrl+Tab** or **Ctrl+1–3** switches tabs. The screen closes when you move too far away, when the clicked block is removed, or when the multiblock is split or merged into a different machine. Reopen it to see the new machine.
 
 ## Breaking and Picking Up Machines
 
 Arrival Anchors require a **stone-tier or better pickaxe** for normal mining drops.
 
-When a member is removed, the remaining blocks are repartitioned into valid rectangles. As much FE as possible stays in the **remaining placed machines**. Only energy that no longer fits can follow a dropped item; if there is no surviving item, that excess is lost.
+Removing a block only affects its own machine. If the rest is no longer a rectangle, it splits into rectangles: the FE fills the largest part first, then the others in turn. Only energy that no longer fits can follow a dropped item; if there is no item, that excess is lost.
 
 ### Survival Mining
 
 Mining with a suitable tool produces an Arrival Anchor item. If meaningful machine data must be preserved, the item carries a packed-machine reference so its FE and configuration can be restored when placed.
 
 An Anchor with **0 FE and default settings** becomes an ordinary item that stacks with freshly crafted Anchors. Nondefault permissions count as meaningful configuration, even if its energy is empty.
+
+### Resetting a Packed Anchor
+
+Place a packed Anchor alone in a crafting grid to turn it into an ordinary Anchor that stacks with freshly crafted ones. Its stored FE and settings are lost.
 
 ### Creative Destruction
 
@@ -108,6 +112,6 @@ Every placed Anchor has an owner. Three permissions apply to Anchors: **Arrive**
 
 Manage permission controls the wrench, the Permissions and Trusted Players tabs of the management screen, and the permission commands.
 
-Permission settings apply to the entire logical multiblock and survive packed pickup. Machines with different permission profiles cannot currently join.
+Permission settings apply to the entire logical multiblock and survive packed pickup. Machines with different permission settings never join. A machine with default settings can be joined to a configured one with the wrench and then takes on its settings.
 
 See [Machine Permissions](permissions.md) for access modes, trusted players, and configuration commands.
