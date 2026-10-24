@@ -1,6 +1,7 @@
 package io.github.chamoisest.fluxbound.machine.energy;
 
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.energy.EnergyHandlerUtil;
 import net.neoforged.neoforge.transfer.energy.SimpleEnergyHandler;
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
@@ -27,7 +28,8 @@ public final class MachineEnergyStorage implements EnergyHandler
         this.gameTime = gameTime;
         this.valid = valid;
 
-        storage = new SimpleEnergyHandler(capacity, capacity, 0, initialEnergy) {
+        // Internally extractable for charging (chargeInto); the public extract() below still refuses everything.
+        storage = new SimpleEnergyHandler(capacity, capacity, capacity, initialEnergy) {
             @Override
             protected void onEnergyChanged(int previousAmount)
             {
@@ -88,6 +90,19 @@ public final class MachineEnergyStorage implements EnergyHandler
         }
 
         return 0;
+    }
+
+    // Internal only: charging moves FE from the machine into an item in one transaction (C3). Cables can't extract
+    // (extract() stays 0), because stationary machines don't act as batteries (spec §11). From M5, reserved FE must be
+    // excluded here (spec §13).
+    public int chargeInto(EnergyHandler target, int maxAmount)
+    {
+        if (!active || !valid.getAsBoolean())
+        {
+            return 0;
+        }
+
+        return EnergyHandlerUtil.move(storage, target, maxAmount, null);
     }
 
     public void invalidate()

@@ -64,6 +64,8 @@ Right-click an Anchor to open its management screen. This works with an empty ha
 
 The bar on the left shows the machine's energy. Hover over it to see the stored FE, the capacity, and the maximum input of the whole multiblock.
 
+Below the bar is the **charging slot**. Place an item that stores FE there to charge it from the machine's energy, up to the machine's maximum input per tick. Inserting items requires **Charge** permission, but anyone can take an item out, so a public charger is not safe storage. Hover over the lightning icon below the slot to see whether the item is charging, and why not.
+
 The tabs above the screen switch between:
 
 - **Overview:** the owner, the number of blocks, the dimension, and the approximate centre position of the multiblock.
@@ -79,6 +81,8 @@ The **?** at the top right of each tab explains that tab when you hover over it.
 Arrival Anchors require a **stone-tier or better pickaxe** for normal mining drops.
 
 Removing a block only affects its own machine. If the rest is no longer a rectangle, it splits into rectangles: the FE fills the largest part first, then the others in turn. Only energy that no longer fits can follow a dropped item; if there is no item, that excess is lost.
+
+The charging slot belongs to the whole multiblock. Its item drops when the last block is removed. When two machines are joined and both hold an item, one item drops.
 
 ### Survival Mining
 

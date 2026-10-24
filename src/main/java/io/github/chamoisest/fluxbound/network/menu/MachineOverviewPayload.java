@@ -10,11 +10,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-// Public machine information shown on the Overview tab. The container ID ties it to one opened menu,
+// Public machine information shown on the Overview tab, plus the viewer's own Charge right for the charging slot's
+// client prediction (M3-B2). The container ID ties it to one opened menu,
 // because IDs are reused and a late payload must not reach a different menu.
 public record MachineOverviewPayload(int containerId, String machineId, long energy, long capacity,
                                      long inputPerTick, int memberCount, String ownerName,
-                                     String dimension, BlockPos center)
+                                     String dimension, BlockPos center, boolean viewerMayCharge)
         implements CustomPacketPayload
 {
     public static final Type<MachineOverviewPayload> TYPE =
@@ -31,6 +32,7 @@ public record MachineOverviewPayload(int containerId, String machineId, long ene
                     ByteBufCodecs.STRING_UTF8, MachineOverviewPayload::ownerName,
                     ByteBufCodecs.STRING_UTF8, MachineOverviewPayload::dimension,
                     BlockPos.STREAM_CODEC, MachineOverviewPayload::center,
+                    ByteBufCodecs.BOOL, MachineOverviewPayload::viewerMayCharge,
                     MachineOverviewPayload::new
             );
 

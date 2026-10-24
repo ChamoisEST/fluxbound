@@ -1,5 +1,6 @@
 package io.github.chamoisest.fluxbound.machine.data;
 
+import io.github.chamoisest.fluxbound.machine.data.MachineRestructuring.ChargingTransfer;
 import io.github.chamoisest.fluxbound.machine.data.MachineRestructuring.MergePlan;
 import io.github.chamoisest.fluxbound.machine.data.MachineRestructuring.Piece;
 import io.github.chamoisest.fluxbound.machine.data.MachineRestructuring.RemovalPlan;
@@ -387,5 +388,37 @@ class MachineRestructuringTest
     void placementNeverJoinsADefaultMachineWithAConfiguredOne()
     {
         assertNull(place(machine("x", List.of(at(1, 0)), 0), configured("c", List.of(at(0, 0)), 0)));
+    }
+
+    // ---- Charging items on merges (M3-9 a). ----
+
+    @Test
+    void theSurvivorKeepsItsChargingItemAndAbsorbedOnesDrop()
+    {
+        MergePlan plan = new MergePlan(machine("s", List.of(at(0, 0)), 0), List.of("a", "b"));
+        ChargingTransfer transfer = MachineRestructuring.planChargingItems(plan, Set.of("s", "a", "b"));
+
+        assertNull(transfer.movedFrom());
+        assertEquals(List.of("a", "b"), transfer.droppedFrom());
+    }
+
+    @Test
+    void anEmptySurvivorTakesTheFirstAbsorbedItem()
+    {
+        MergePlan plan = new MergePlan(machine("s", List.of(at(0, 0)), 0), List.of("a", "b", "c"));
+        ChargingTransfer transfer = MachineRestructuring.planChargingItems(plan, Set.of("b", "c"));
+
+        assertEquals("b", transfer.movedFrom());
+        assertEquals(List.of("c"), transfer.droppedFrom());
+    }
+
+    @Test
+    void mergesWithoutChargingItemsMoveNothing()
+    {
+        MergePlan plan = new MergePlan(machine("s", List.of(at(0, 0)), 0), List.of("a"));
+        ChargingTransfer transfer = MachineRestructuring.planChargingItems(plan, Set.of());
+
+        assertNull(transfer.movedFrom());
+        assertEquals(List.of(), transfer.droppedFrom());
     }
 }

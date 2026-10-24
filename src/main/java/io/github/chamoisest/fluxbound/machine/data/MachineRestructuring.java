@@ -101,6 +101,36 @@ public final class MachineRestructuring
         return !machine.permissions().isDefaultFor(MachineRights.of(machine));
     }
 
+    // Where charging items go when machines merge (M3-9 a, C2): the survivor keeps its own; if it has none, the first
+    // absorbed item in plan order moves into it; every other absorbed item drops. Pure, so the order stays testable.
+    public record ChargingTransfer(@Nullable String movedFrom, List<String> droppedFrom) {}
+
+    public static ChargingTransfer planChargingItems(MergePlan plan, Set<String> withItems)
+    {
+        boolean survivorHasItem = withItems.contains(plan.result().id());
+        String movedFrom = null;
+        List<String> dropped = new ArrayList<>();
+
+        for (String id : plan.absorbedIds())
+        {
+            if (!withItems.contains(id))
+            {
+                continue;
+            }
+
+            if (!survivorHasItem && movedFrom == null)
+            {
+                movedFrom = id;
+            }
+            else
+            {
+                dropped.add(id);
+            }
+        }
+
+        return new ChargingTransfer(movedFrom, List.copyOf(dropped));
+    }
+
     // A placed block joins whole neighbouring machines only, never parts of one (M2 G1-1, I5). After each merge the
     // result looks for the next fitting neighbour as a whole, until none fits. Bounded: every step removes a machine.
     // machineAt reads the registry as it was before the placement; null means nothing merges.

@@ -2,6 +2,7 @@ package io.github.chamoisest.fluxbound.network;
 
 import io.github.chamoisest.fluxbound.network.config.ConfigSyncPayload;
 import io.github.chamoisest.fluxbound.network.menu.AddTrustedPlayerPayload;
+import io.github.chamoisest.fluxbound.network.menu.MachineChargingPayload;
 import io.github.chamoisest.fluxbound.network.menu.MachineOverviewPayload;
 import io.github.chamoisest.fluxbound.network.menu.MachinePermissionsPayload;
 import io.github.chamoisest.fluxbound.network.menu.RemoveTrustedPlayerPayload;
@@ -14,7 +15,7 @@ public final class ModNetwork
 {
     // Bump whenever a payload is added, removed or changes its wire format.
     // NeoForge refuses connections whose payload versions differ.
-    public static final String PROTOCOL_VERSION = "4";
+    public static final String PROTOCOL_VERSION = "6";
 
     private ModNetwork() {}
 
@@ -27,6 +28,8 @@ public final class ModNetwork
         registrar.playToClient(ConfigSyncPayload.TYPE, ConfigSyncPayload.STREAM_CODEC);
         registrar.playToClient(MachineOverviewPayload.TYPE, MachineOverviewPayload.STREAM_CODEC,
                 MachineOverviewPayload::handleOnClient);
+        registrar.playToClient(MachineChargingPayload.TYPE, MachineChargingPayload.STREAM_CODEC,
+                MachineChargingPayload::handleOnClient);
         registrar.playToClient(MachinePermissionsPayload.TYPE, MachinePermissionsPayload.STREAM_CODEC,
                 MachinePermissionsPayload::handleOnClient);
         registrar.playToServer(SetAccessModePayload.TYPE, SetAccessModePayload.STREAM_CODEC,

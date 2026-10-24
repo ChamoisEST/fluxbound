@@ -96,13 +96,14 @@ public class FluxboundWrenchItem extends Item
         if (player.isShiftKeyDown()) {
             pickup(level, player, pos, stack);
         } else {
-            selectOrJoin(level, player, target, stack);
+            selectOrJoin(level, player, target, stack, pos);
         }
 
         return InteractionResult.SUCCESS;
     }
 
-    private void selectOrJoin(ServerLevel level, ServerPlayer player, MachineRecord target, ItemStack wrench)
+    private void selectOrJoin(ServerLevel level, ServerPlayer player, MachineRecord target, ItemStack wrench,
+                              BlockPos pos)
     {
         String selectedId = wrench.get(ModDataComponents.WRENCH_SELECTION.get());
 
@@ -134,7 +135,7 @@ public class FluxboundWrenchItem extends Item
             return;
         }
 
-        if (registry.tryManualJoin(level, selectedId, target.id())) {
+        if (registry.tryManualJoin(level, selectedId, target.id(), pos)) {
             wrench.remove(ModDataComponents.WRENCH_SELECTION.get());
             message(player, "message.fluxbound.wrench.joined");
         } else {

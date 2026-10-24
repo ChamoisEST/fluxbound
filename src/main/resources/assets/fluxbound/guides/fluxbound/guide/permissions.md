@@ -16,7 +16,7 @@ All blocks in one [logical multiblock](arrival_anchor.md#multiblocks) share the 
 | --- | --- |
 | **Arrive** | Who may arrive at this Anchor by teleportation |
 | **Manage** | Who may change settings, edit the trusted list, and use the <ItemLink id="fluxbound:wrench" /> on the machine |
-| **Charge** | Who may charge handheld teleporters at this Anchor |
+| **Charge** | Who may put items into the charging slot |
 
 All permissions default to **Owner Only**.
 
